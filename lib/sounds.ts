@@ -1,0 +1,66 @@
+import { Howl } from 'howler'
+
+// ---------------------------------------------------------------------------
+// Global cooldown — ignore plays within 300ms of the previous one
+// ---------------------------------------------------------------------------
+
+let lastPlayedTime = 0
+
+function canPlay(): boolean {
+  const now = Date.now()
+  if (now - lastPlayedTime < 300) return false
+  lastPlayedTime = now
+  return true
+}
+
+// ---------------------------------------------------------------------------
+// Lazy Howl instances — created on first play, never during import
+// ---------------------------------------------------------------------------
+
+let burnSound: Howl | null = null
+let pingSound: Howl | null = null
+let coinSound: Howl | null = null
+let fanfareSound: Howl | null = null
+
+function play(getOrCreate: () => Howl, volume: number) {
+  if (!canPlay()) return
+  try {
+    const sound = getOrCreate()
+    sound.volume(volume)
+    sound.play()
+  } catch {
+    // silently ignore — missing file or SSR context
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+export function playLifeLost() {
+  play(() => {
+    burnSound ??= new Howl({ src: ['/sounds/burn.mp3'] })
+    return burnSound
+  }, 0.4)
+}
+
+export function playNudge() {
+  play(() => {
+    pingSound ??= new Howl({ src: ['/sounds/ping.mp3'] })
+    return pingSound
+  }, 0.3)
+}
+
+export function playCoinEarned() {
+  play(() => {
+    coinSound ??= new Howl({ src: ['/sounds/coin.mp3'] })
+    return coinSound
+  }, 0.3)
+}
+
+export function playMilestone() {
+  play(() => {
+    fanfareSound ??= new Howl({ src: ['/sounds/fanfare.mp3'] })
+    return fanfareSound
+  }, 0.35)
+}

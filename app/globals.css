@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --radius: 0.5rem;
+
+    /* FocusLock Design Tokens */
+    --ember-orange: #f59e0b;
+    --flame-red: #ef4444;
+    --flame-purple: #7c3aed;
+    --flame-blue: #3b82f6;
+    --coin-gold: #fbbf24;
+    --life-red: #dc2626;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    background-color: #0a0a0a;
+    @apply text-zinc-100;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply backdrop-blur-md bg-zinc-900/40 border border-zinc-800/50 rounded-2xl;
+  }
+
+  .ember-glow {
+    box-shadow: 0 0 60px 20px rgba(245, 158, 11, 0.15);
+  }
+
+  .text-game {
+    font-family: 'Orbitron', sans-serif;
+  }
+}
+
+@keyframes scan-line-move {
+  0%   { transform: translateY(-2px); }
+  100% { transform: translateY(calc(100vh + 2px)); }
+}
+
+@keyframes ember-rise {
+  0%   { opacity: 0;    transform: translateY(0); }
+  20%  { opacity: 0.22; }
+  80%  { opacity: 0.1;  }
+  100% { opacity: 0;    transform: translateY(-90px); }
+}
+
+.thin-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #52525b #27272a;
+}
+.thin-scroll::-webkit-scrollbar { width: 4px; }
+.thin-scroll::-webkit-scrollbar-track { background: #27272a; border-radius: 4px; }
+.thin-scroll::-webkit-scrollbar-thumb { background: #52525b; border-radius: 4px; }
