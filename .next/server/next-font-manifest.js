@@ -1,1 +1,0 @@
-self.__NEXT_FONT_MANIFEST='{"pages":{},"app":{"/Users/jollenshoulddai/Desktop/FocusLock/app/layout":["static/media/9a4ee768fed045da-s.p.woff2","static/media/27834908180db20f-s.p.woff2"]},"appUsingSizeAdjust":true,"pagesUsingSizeAdjust":false}';
