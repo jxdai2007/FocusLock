@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { playClick, playIgnite } from '@/lib/sounds'
+import { getItem } from '@/lib/shop'
+import { useSessionStore } from '@/stores/sessionStore'
 import type { SessionConfig } from '@/lib/types'
 
 const DURATION_OPTIONS = [5, 15, 25, 45, 60, 90] // minutes
@@ -26,6 +28,7 @@ interface SessionSetupProps {
 }
 
 export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
+  const activeItems = useSessionStore((s) => s.userStats.activeItems)
   const [duration, setDuration] = useState(25)
   const [lives, setLives] = useState(3)
   const [taskDescription, setTaskDescription] = useState('')
@@ -144,6 +147,28 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
               ))}
             </div>
           </div>
+
+          {/* Active items */}
+          {activeItems.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                ⚡ Active Items
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {activeItems.map((itemId, i) => {
+                  const item = getItem(itemId)
+                  return (
+                    <span
+                      key={`${itemId}-${i}`}
+                      className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs text-amber-400"
+                    >
+                      {item.icon} {item.name}
+                    </span>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Task description */}
           <div className="flex flex-col gap-2">

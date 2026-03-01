@@ -7,10 +7,12 @@ import {
   getSessionSummary,
 } from '@/lib/focusEngine'
 import { checkAchievements, mergeAchievements } from '@/lib/achievements'
+import { getItem, getInventoryCount, canAfford } from '@/lib/shop'
 import { playLifeLost, playNudge } from '@/lib/sounds'
 import type {
   Achievement,
   FocusAnalysis,
+  InventoryItem,
   SessionConfig,
   SessionState,
   SessionSummaryData,
@@ -27,6 +29,8 @@ const DEFAULT_USER_STATS: UserStats = {
   totalCoins: 0,
   sessions: [],
   achievements: [],
+  inventory: [],
+  activeItems: [],
 }
 
 interface StoreState {
@@ -53,10 +57,28 @@ interface StoreState {
   clearMilestone: () => void
   clearNewAchievements: () => void
   setIsAnalyzing: (v: boolean) => void
+  // shop & inventory
+  purchaseItem: (itemId: string) => boolean
+  activateItem: (itemId: string) => void
+  deactivateItem: (itemId: string) => void
 }
 
 function toDateString(d: Date): string {
   return d.toISOString().slice(0, 10)
+}
+
+function addToInventory(inventory: InventoryItem[], itemId: string): InventoryItem[] {
+  const existing = inventory.find((i) => i.itemId === itemId)
+  if (existing) {
+    return inventory.map((i) => (i.itemId === itemId ? { ...i, quantity: i.quantity + 1 } : i))
+  }
+  return [...inventory, { itemId, quantity: 1 }]
+}
+
+function removeFromInventory(inventory: InventoryItem[], itemId: string): InventoryItem[] {
+  return inventory
+    .map((i) => (i.itemId === itemId ? { ...i, quantity: i.quantity - 1 } : i))
+    .filter((i) => i.quantity > 0)
 }
 
 export const useSessionStore = create<StoreState>()(
@@ -74,27 +96,66 @@ export const useSessionStore = create<StoreState>()(
 
       openSetup: () => set({ appState: 'setup' }),
 
-      startSession: (config: SessionConfig) =>
+      startSession: (config: SessionConfig) => {
+        const { userStats } = get()
+        const { activeItems } = userStats
+
+        let session = createInitialState(config)
+
+        // Apply active items
+        const bonusLives = activeItems.filter((id) => id === 'extra_life').length
+        if (bonusLives > 0) {
+          session = {
+            ...session,
+            lives: session.lives + bonusLives,
+            config: { ...session.config, lives: session.config.lives + bonusLives },
+          }
+        }
+        if (activeItems.includes('shield')) {
+          session = { ...session, hasShield: true }
+        }
+        if (activeItems.includes('phoenix')) {
+          session = { ...session, hasRevive: true }
+        }
+
         set({
-          session: createInitialState(config),
+          session,
           appState: 'active',
           latestRoast: null,
           latestMilestone: null,
           sessionSummary: null,
           newlyUnlockedAchievements: [],
           isGameOver: false,
-        }),
+        })
+      },
 
       processAnalysis: (analysis: FocusAnalysis) => {
         const { session } = get()
         if (!session) return
-        const next = updateSession(session, analysis, 12)
+        let next = updateSession(session, analysis, 12)
         const milestone = checkMilestone(session, next)
-        if (next.livesLost > session.livesLost) playLifeLost()
+        let roast = analysis.roast
+        let lifeLost = next.livesLost > session.livesLost
+
+        // Shield: absorb first life loss
+        if (lifeLost && next.hasShield) {
+          next = { ...next, lives: next.lives + 1, livesLost: next.livesLost - 1, hasShield: false }
+          roast = "🛡️ Shield absorbed that one! Don't waste it."
+          lifeLost = false
+        }
+
+        // Revive: if lives hit 0 and has revive
+        if (next.lives === 0 && next.hasRevive) {
+          next = { ...next, lives: 1, hasRevive: false }
+          roast = "🪶 The Phoenix Feather saved you! You're back with 1 life."
+        }
+
+        if (lifeLost) playLifeLost()
         else playNudge()
+
         set({
           session: next,
-          latestRoast: { message: analysis.roast, status: analysis.status },
+          latestRoast: { message: roast, status: analysis.status },
           ...(milestone ? { latestMilestone: milestone } : {}),
           ...(next.lives === 0 ? { isGameOver: true } : {}),
         })
@@ -119,14 +180,34 @@ export const useSessionStore = create<StoreState>()(
         const today = toDateString(new Date())
         const yesterday = toDateString(new Date(Date.now() - 86400000))
 
+        // Coin multipliers from active items
+        let coins = summary.coinsEarned
+        if (userStats.activeItems.includes('double_coins')) coins *= 2
+        else if (userStats.activeItems.includes('coin_magnet')) coins = Math.round(coins * 1.5)
+        summary.coinsEarned = coins
+
+        // Day streak logic with streak freeze
         let newDayStreak = userStats.dayStreak
+        let newInventory = [...userStats.inventory]
+
         if (summary.focusPercentage > 50) {
           if (userStats.lastSessionDate === today) {
             // no change
           } else if (userStats.lastSessionDate === yesterday) {
             newDayStreak = userStats.dayStreak + 1
           } else {
-            newDayStreak = 1
+            // Missed a day — check for streak freeze
+            if (userStats.dayStreak > 0) {
+              const freezeIdx = newInventory.findIndex((i) => i.itemId === 'streak_freeze')
+              if (freezeIdx !== -1) {
+                newInventory = removeFromInventory(newInventory, 'streak_freeze')
+                newDayStreak = userStats.dayStreak + 1
+              } else {
+                newDayStreak = 1
+              }
+            } else {
+              newDayStreak = 1
+            }
           }
         } else {
           newDayStreak = 0
@@ -143,9 +224,11 @@ export const useSessionStore = create<StoreState>()(
           lastSessionDate: today,
           totalSessions: userStats.totalSessions + 1,
           totalFocusMinutes: userStats.totalFocusMinutes + summary.totalMinutes,
-          totalCoins: userStats.totalCoins + summary.coinsEarned,
+          totalCoins: userStats.totalCoins + coins,
           sessions: [savedSession, ...userStats.sessions].slice(0, 50),
           achievements: userStats.achievements,
+          inventory: newInventory,
+          activeItems: [], // clear active items after session
         }
 
         // Merge with master list (handles new achievements added in future releases)
@@ -194,10 +277,62 @@ export const useSessionStore = create<StoreState>()(
       clearMilestone: () => set({ latestMilestone: null }),
       clearNewAchievements: () => set({ newlyUnlockedAchievements: [] }),
       setIsAnalyzing: (v: boolean) => set({ isAnalyzing: v }),
+
+      // -- Shop & Inventory --
+
+      purchaseItem: (itemId: string): boolean => {
+        const { userStats } = get()
+        const item = getItem(itemId)
+        if (!canAfford(userStats.totalCoins, item)) return false
+        if (!item.stackable && getInventoryCount(userStats.inventory, itemId) > 0) return false
+
+        set({
+          userStats: {
+            ...userStats,
+            totalCoins: userStats.totalCoins - item.cost,
+            inventory: addToInventory(userStats.inventory, itemId),
+          },
+        })
+        return true
+      },
+
+      activateItem: (itemId: string) => {
+        const { userStats } = get()
+        if (getInventoryCount(userStats.inventory, itemId) <= 0) return
+        set({
+          userStats: {
+            ...userStats,
+            inventory: removeFromInventory(userStats.inventory, itemId),
+            activeItems: [...userStats.activeItems, itemId],
+          },
+        })
+      },
+
+      deactivateItem: (itemId: string) => {
+        const { userStats } = get()
+        const idx = userStats.activeItems.indexOf(itemId)
+        if (idx === -1) return
+        const newActive = [...userStats.activeItems]
+        newActive.splice(idx, 1)
+        set({
+          userStats: {
+            ...userStats,
+            inventory: addToInventory(userStats.inventory, itemId),
+            activeItems: newActive,
+          },
+        })
+      },
     }),
     {
       name: 'focuslock-stats',
       partialize: (state) => ({ userStats: state.userStats }),
+      merge: (persisted, current) => {
+        const p = persisted as { userStats?: Partial<UserStats> } | undefined
+        return {
+          ...current,
+          userStats: { ...DEFAULT_USER_STATS, ...current.userStats, ...p?.userStats },
+        }
+      },
     },
   ),
 )

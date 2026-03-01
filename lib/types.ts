@@ -37,6 +37,8 @@ export interface SessionState {
   lastAnalysis: FocusAnalysis | null
   coinsEarned: number
   hadComeback: boolean
+  hasShield: boolean
+  hasRevive: boolean
 }
 
 export interface DistractionEvent {
@@ -98,4 +100,43 @@ export interface UserStats {
   totalCoins: number
   sessions: SavedSession[]
   achievements: Achievement[]
+  inventory: InventoryItem[]
+  activeItems: string[]
+}
+
+export interface ShopItem {
+  id: string
+  name: string
+  description: string
+  icon: string
+  cost: number
+  category: 'lives' | 'streaks' | 'coins' | 'cosmetic'
+  effect: string
+  stackable: boolean
+}
+
+export interface InventoryItem {
+  itemId: string
+  quantity: number
+}
+
+export interface RoomPlayer {
+  id: string
+  name: string
+  focusScore: number
+  currentStreak: number
+  lives: number
+  livesTotal: number
+  status: 'focused' | 'distracted' | 'away' | 'idle'
+  lastUpdate: number
+  flameIntensity: number
+  coinsEarned: number
+}
+
+export interface StudyRoom {
+  id: string
+  hostId: string
+  createdAt: number
+  players: Record<string, RoomPlayer>
+  isActive: boolean
 }

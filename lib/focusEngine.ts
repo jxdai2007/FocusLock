@@ -28,6 +28,8 @@ export function createInitialState(config: SessionConfig): SessionState {
     lastAnalysis: null,
     coinsEarned: 0,
     hadComeback: false,
+    hasShield: false,
+    hasRevive: false,
   }
 }
 
