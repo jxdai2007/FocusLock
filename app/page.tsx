@@ -10,12 +10,11 @@ import MilestoneToast from '@/components/gamification/MilestoneToast'
 import AchievementsPanel from '@/components/gamification/AchievementsPanel'
 import InventoryPanel from '@/components/gamification/InventoryPanel'
 import Shop from '@/components/gamification/Shop'
+import RoomLobby from '@/components/multiplayer/RoomLobby'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
 import { playClick } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
-import { createRoom, joinRoom, subscribeToRoom, leaveRoom } from '@/lib/rooms'
-import type { StudyRoom } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -78,59 +77,7 @@ export default function Home() {
   const { flameState, intensity, streak, coins } = useFlameState()
 
   const [showShop, setShowShop] = useState(false)
-
-  // ── TEMPORARY: Firebase room test ──
-  const [testName, setTestName] = useState('')
-  const [testRoomCode, setTestRoomCode] = useState('')
-  const [testJoinCode, setTestJoinCode] = useState('')
-  const [testPlayerId, setTestPlayerId] = useState('')
-  const [testRoomData, setTestRoomData] = useState<StudyRoom | null>(null)
-  const [testStatus, setTestStatus] = useState('')
-
-  useEffect(() => {
-    if (!testRoomCode) return
-    const unsub = subscribeToRoom(testRoomCode, (room) => {
-      setTestRoomData(room)
-    })
-    return unsub
-  }, [testRoomCode])
-
-  async function handleCreateRoom() {
-    if (!testName.trim()) { setTestStatus('Enter a name first'); return }
-    try {
-      const { roomCode, playerId } = await createRoom(testName.trim())
-      setTestRoomCode(roomCode)
-      setTestPlayerId(playerId)
-      setTestStatus(`Created room ${roomCode}`)
-    } catch (e) {
-      setTestStatus(`Error: ${e}`)
-    }
-  }
-
-  async function handleJoinRoom() {
-    if (!testName.trim()) { setTestStatus('Enter a name first'); return }
-    if (!testJoinCode.trim()) { setTestStatus('Enter a room code'); return }
-    try {
-      const result = await joinRoom(testJoinCode.trim().toUpperCase(), testName.trim())
-      if (!result) { setTestStatus('Room not found or full'); return }
-      setTestRoomCode(testJoinCode.trim().toUpperCase())
-      setTestPlayerId(result.playerId)
-      setTestStatus(`Joined room ${testJoinCode.trim().toUpperCase()}`)
-    } catch (e) {
-      setTestStatus(`Error: ${e}`)
-    }
-  }
-
-  async function handleLeaveRoom() {
-    if (testRoomCode && testPlayerId) {
-      await leaveRoom(testRoomCode, testPlayerId)
-      setTestRoomCode('')
-      setTestPlayerId('')
-      setTestRoomData(null)
-      setTestStatus('Left room')
-    }
-  }
-  // ── END TEMPORARY ──
+  const [showLobby, setShowLobby] = useState(false)
 
   // Ember burst on transitions (setup→active and summary→idle)
   const [showEmbers, setShowEmbers] = useState(false)
@@ -292,17 +239,29 @@ export default function Home() {
                 🔥 Start Session
               </motion.button>
 
-              {/* Shop button */}
-              <motion.button
-                className="mt-3 w-72 rounded-xl border border-amber-600/50 bg-amber-900/30 py-3 text-game text-lg font-bold uppercase tracking-wider text-amber-400"
+              {/* Shop + Study Room buttons */}
+              <motion.div
+                className="mt-3 flex w-72 gap-2"
                 variants={fadeUp} initial="hidden" animate="visible"
                 transition={delay(0.35)}
-                whileHover={{ scale: 1.03, filter: 'brightness(1.1)' }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => { playClick(); setShowShop(true) }}
               >
-                🛒 Shop
-              </motion.button>
+                <motion.button
+                  className="flex-1 rounded-xl border border-amber-600/50 bg-amber-900/30 py-3 text-game text-sm font-bold uppercase tracking-wider text-amber-400"
+                  whileHover={{ scale: 1.03, filter: 'brightness(1.1)' }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { playClick(); setShowShop(true) }}
+                >
+                  🛒 Shop
+                </motion.button>
+                <motion.button
+                  className="flex-1 rounded-xl border border-zinc-700 bg-zinc-900/40 py-3 text-game text-sm font-bold uppercase tracking-wider text-zinc-300 hover:border-amber-500/50 hover:text-amber-400 transition-colors"
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => { playClick(); setShowLobby(true) }}
+                >
+                  👥 Study Room
+                </motion.button>
+              </motion.div>
 
               {/* First-visit welcome card */}
               {userStats.totalSessions === 0 && (
@@ -436,69 +395,6 @@ export default function Home() {
                 <InventoryPanel onOpenShop={() => setShowShop(true)} />
               </motion.div>
 
-              {/* ── TEMPORARY: Firebase Room Test ── */}
-              <div className="glass-card mt-8 mb-8 w-full max-w-lg p-6">
-                <p className="mb-4 text-xs font-bold uppercase tracking-widest text-red-400">
-                  🔧 Firebase Room Test (TEMPORARY)
-                </p>
-
-                {!testRoomCode ? (
-                  <div className="flex flex-col gap-3">
-                    <input
-                      type="text"
-                      placeholder="Your Name"
-                      value={testName}
-                      onChange={(e) => setTestName(e.target.value)}
-                      className="rounded-lg border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-amber-500/50"
-                    />
-                    <button
-                      onClick={handleCreateRoom}
-                      className="rounded-lg bg-amber-600 px-4 py-2 text-sm font-bold text-white hover:bg-amber-500"
-                    >
-                      Create Room
-                    </button>
-                    <div className="flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Room Code"
-                        value={testJoinCode}
-                        onChange={(e) => setTestJoinCode(e.target.value)}
-                        className="flex-1 rounded-lg border border-zinc-700 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-amber-500/50 uppercase"
-                        maxLength={6}
-                      />
-                      <button
-                        onClick={handleJoinRoom}
-                        className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-500"
-                      >
-                        Join
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm text-zinc-300">
-                        Room: <span className="font-mono text-lg font-bold text-amber-400">{testRoomCode}</span>
-                      </p>
-                      <button
-                        onClick={handleLeaveRoom}
-                        className="rounded-lg bg-red-600/80 px-3 py-1 text-xs font-bold text-white hover:bg-red-500"
-                      >
-                        Leave
-                      </button>
-                    </div>
-                    <p className="text-xs text-zinc-500">Player ID: {testPlayerId}</p>
-                    <pre className="max-h-60 overflow-auto rounded-lg bg-black/40 p-3 text-xs text-zinc-400">
-                      {testRoomData ? JSON.stringify(testRoomData, null, 2) : 'Waiting for data...'}
-                    </pre>
-                  </div>
-                )}
-
-                {testStatus && (
-                  <p className="mt-2 text-xs text-zinc-500">{testStatus}</p>
-                )}
-              </div>
-              {/* ── END TEMPORARY ── */}
             </main>
             </div>
           </motion.div>
@@ -515,6 +411,16 @@ export default function Home() {
       {/* ── Shop modal ── */}
       <AnimatePresence>
         {showShop && <Shop onClose={() => setShowShop(false)} />}
+      </AnimatePresence>
+
+      {/* ── Room lobby modal ── */}
+      <AnimatePresence>
+        {showLobby && (
+          <RoomLobby
+            onClose={() => setShowLobby(false)}
+            onRoomStart={() => { setShowLobby(false); openSetup() }}
+          />
+        )}
       </AnimatePresence>
     </>
   )
