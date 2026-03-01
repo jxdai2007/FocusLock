@@ -11,10 +11,12 @@ import AchievementsPanel from '@/components/gamification/AchievementsPanel'
 import InventoryPanel from '@/components/gamification/InventoryPanel'
 import Shop from '@/components/gamification/Shop'
 import RoomLobby from '@/components/multiplayer/RoomLobby'
+import MultiplayerDashboard from '@/components/multiplayer/MultiplayerDashboard'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
 import { playClick } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useMultiplayerStore } from '@/stores/multiplayerStore'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -75,6 +77,7 @@ export default function Home() {
   } = useSessionStore()
 
   const { flameState, intensity, streak, coins } = useFlameState()
+  const { isInRoom } = useMultiplayerStore()
 
   const [showShop, setShowShop] = useState(false)
   const [showLobby, setShowLobby] = useState(false)
@@ -126,7 +129,13 @@ export default function Home() {
             exit={{ opacity: 0, transition: { duration: 0.3 } }}
             transition={{ duration: 0.3 }}
           >
-            <SessionActive />
+            {isInRoom ? (
+              <MultiplayerDashboard>
+                <SessionActive />
+              </MultiplayerDashboard>
+            ) : (
+              <SessionActive />
+            )}
             <MilestoneToast />
           </motion.div>
         )}

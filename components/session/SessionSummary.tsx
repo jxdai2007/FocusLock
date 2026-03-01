@@ -20,6 +20,7 @@ import { generateSessionReview } from '@/lib/gemini'
 import { playClick, playCoinEarned, playConfetti, playMilestone, playTrombone } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useMultiplayerStore } from '@/stores/multiplayerStore'
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -38,6 +39,7 @@ function getGrade(pct: number): { letter: string; color: string; glow: string } 
 
 export default function SessionSummary() {
   const { sessionSummary, session, openSetup, returnToIdle, newlyUnlockedAchievements, clearNewAchievements } = useSessionStore()
+  const { isInRoom, room, playerId, leaveRoom } = useMultiplayerStore()
 
   const [phase, setPhase] = useState<'entrance' | 'achievements' | 's-rank' | 'card'>('entrance')
   const [aiReview, setAiReview] = useState<string | null>(null)
@@ -375,7 +377,46 @@ export default function SessionSummary() {
               )}
             </div>
 
-            {/* 6. Focus Timeline */}
+            {/* 6. Room Leaderboard */}
+            {isInRoom && room?.players && (
+              <div>
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  👥 Room Results
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {Object.values(room.players)
+                    .sort((a, b) => b.focusScore - a.focusScore)
+                    .map((player, i) => {
+                      const isSelf = player.id === playerId
+                      return (
+                        <div
+                          key={player.id}
+                          className={`flex items-center gap-3 rounded-lg px-3 py-2 ${
+                            isSelf
+                              ? 'border border-amber-500/40 bg-amber-900/20'
+                              : 'border border-zinc-800/30 bg-zinc-900/30'
+                          }`}
+                        >
+                          <span className="text-sm font-bold text-zinc-500 w-5">
+                            {i === 0 ? '👑' : `#${i + 1}`}
+                          </span>
+                          <span className={`text-sm flex-1 ${isSelf ? 'text-amber-400 font-bold' : 'text-zinc-300'}`}>
+                            {isSelf ? 'You' : player.name}
+                          </span>
+                          <span className="text-game text-sm font-bold text-zinc-200">
+                            {player.focusScore}%
+                          </span>
+                          <span className="text-xs text-yellow-400/80">
+                            +{player.coinsEarned} 🪙
+                          </span>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+
+            {/* 7. Focus Timeline */}
             {chartData.length >= 2 && (
               <ResponsiveContainer width="100%" height={160}>
                 <AreaChart data={chartData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
@@ -431,7 +472,7 @@ export default function SessionSummary() {
               </ResponsiveContainer>
             )}
 
-            {/* 7. Action buttons */}
+            {/* 8. Action buttons */}
             <div className="flex justify-center gap-3">
               <motion.button
                 className="rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-6 py-3 text-game text-sm font-bold text-white transition hover:brightness-110"
@@ -443,7 +484,11 @@ export default function SessionSummary() {
               <motion.button
                 className="rounded-xl border border-zinc-700 bg-zinc-800 px-6 py-3 text-game text-sm text-zinc-400 transition hover:bg-zinc-700"
                 whileTap={{ scale: 0.95 }}
-                onClick={() => { playClick(); returnToIdle() }}
+                onClick={async () => {
+                  playClick()
+                  if (isInRoom) await leaveRoom()
+                  returnToIdle()
+                }}
               >
                 🏠 Home
               </motion.button>

@@ -7,7 +7,7 @@ import {
   updatePlayerState,
 } from '@/lib/rooms'
 import { database, ref, update } from '@/lib/firebase'
-import type { StudyRoom, SessionState, SessionConfig } from '@/lib/types'
+import type { RoomPlayer, StudyRoom, SessionState, SessionConfig } from '@/lib/types'
 
 interface MultiplayerState {
   roomCode: string | null
@@ -22,11 +22,29 @@ interface MultiplayerState {
   joinRoom: (code: string, name: string) => Promise<void>
   leaveRoom: () => Promise<void>
   setRoom: (room: StudyRoom | null) => void
-  syncLocalState: (session: SessionState, config: SessionConfig) => void
+  syncLocalState: (session: SessionState) => void
+  markIdle: () => void
   clearError: () => void
 }
 
 let unsubscribe: (() => void) | null = null
+let lastSyncTime = 0
+let beforeUnloadHandler: (() => void) | null = null
+
+function installBeforeUnload(roomCode: string, playerId: string) {
+  if (beforeUnloadHandler) window.removeEventListener('beforeunload', beforeUnloadHandler)
+  beforeUnloadHandler = () => {
+    fbLeaveRoom(roomCode, playerId)
+  }
+  window.addEventListener('beforeunload', beforeUnloadHandler)
+}
+
+function removeBeforeUnload() {
+  if (beforeUnloadHandler) {
+    window.removeEventListener('beforeunload', beforeUnloadHandler)
+    beforeUnloadHandler = null
+  }
+}
 
 export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
   roomCode: null,
@@ -45,6 +63,8 @@ export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
       unsubscribe = subscribeToRoom(roomCode, (room) => {
         get().setRoom(room)
       })
+
+      installBeforeUnload(roomCode, playerId)
     } catch (e) {
       set({ error: `Failed to create room: ${e}` })
     }
@@ -62,6 +82,8 @@ export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
       unsubscribe = subscribeToRoom(code, (room) => {
         get().setRoom(room)
       })
+
+      installBeforeUnload(code, result.playerId)
     } catch (e) {
       set({ error: `Failed to join room: ${e}` })
     }
@@ -69,6 +91,7 @@ export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
 
   leaveRoom: async () => {
     const { roomCode, playerId } = get()
+    removeBeforeUnload()
     if (unsubscribe) {
       unsubscribe()
       unsubscribe = null
@@ -76,6 +99,7 @@ export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
     if (roomCode && playerId) {
       await fbLeaveRoom(roomCode, playerId)
     }
+    lastSyncTime = 0
     set({ roomCode: null, playerId: null, playerName: '', room: null, isHost: false, isInRoom: false, error: null })
   },
 
@@ -83,19 +107,30 @@ export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
     set({ room })
   },
 
-  syncLocalState: (session: SessionState, config: SessionConfig) => {
+  syncLocalState: (session: SessionState) => {
     const { roomCode, playerId } = get()
     if (!roomCode || !playerId) return
+
+    // Throttle: max once every 3 seconds
+    const now = Date.now()
+    if (now - lastSyncTime < 3000) return
+    lastSyncTime = now
 
     updatePlayerState(roomCode, playerId, {
       focusScore: session.focusScore,
       currentStreak: session.currentStreak,
       lives: session.lives,
-      livesTotal: config.lives,
-      status: session.lastAnalysis?.status ?? 'idle',
-      flameIntensity: Math.min(100, Math.max(10, session.focusScore)),
+      livesTotal: session.config.lives,
+      status: session.lastAnalysis?.status ?? 'focused',
+      flameIntensity: session.focusScore,
       coinsEarned: session.coinsEarned,
     })
+  },
+
+  markIdle: () => {
+    const { roomCode, playerId } = get()
+    if (!roomCode || !playerId) return
+    updatePlayerState(roomCode, playerId, { status: 'idle' })
   },
 
   clearError: () => set({ error: null }),

@@ -159,6 +159,13 @@ export const useSessionStore = create<StoreState>()(
           ...(milestone ? { latestMilestone: milestone } : {}),
           ...(next.lives === 0 ? { isGameOver: true } : {}),
         })
+
+        // Sync to multiplayer room if in one
+        try {
+          const { useMultiplayerStore } = require('@/stores/multiplayerStore')
+          const mp = useMultiplayerStore.getState()
+          if (mp.isInRoom) mp.syncLocalState(next)
+        } catch { /* multiplayer store not available */ }
       },
 
       pauseSession: () => {
@@ -260,6 +267,13 @@ export const useSessionStore = create<StoreState>()(
           appState: 'summary',
           newlyUnlockedAchievements: newlyUnlocked,
         })
+
+        // Mark player as idle in multiplayer room
+        try {
+          const { useMultiplayerStore } = require('@/stores/multiplayerStore')
+          const mp = useMultiplayerStore.getState()
+          if (mp.isInRoom) mp.markIdle()
+        } catch { /* multiplayer store not available */ }
       },
 
       returnToIdle: () =>
