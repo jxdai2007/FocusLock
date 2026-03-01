@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart } from 'lucide-react'
 import {
@@ -151,6 +151,14 @@ export default function SessionActive() {
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [])
 
+  const chartData = useMemo(() =>
+    (session?.analysisHistory ?? []).map((e) => ({
+      time: Math.round((e.timestamp - (session?.startTime ?? 0)) / 1000),
+      score: e.score,
+    })),
+    [session?.analysisHistory, session?.startTime],
+  )
+
   if (!session) return null
 
   // Derived values
@@ -168,10 +176,6 @@ export default function SessionActive() {
   const focusColorClass =
     focusScore >= 70 ? 'text-green-400' : focusScore >= 40 ? 'text-amber-400' : 'text-red-400'
 
-  const chartData = session.analysisHistory.map((e) => ({
-    time: Math.round((e.timestamp - session.startTime) / 1000),
-    score: e.score,
-  }))
   const latestChartScore = chartData[chartData.length - 1]?.score ?? 60
   const areaStroke = latestChartScore > 50 ? '#4ade80' : '#f87171'
 

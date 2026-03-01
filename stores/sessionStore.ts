@@ -7,7 +7,7 @@ import {
   getSessionSummary,
 } from '@/lib/focusEngine'
 import { checkAchievements, mergeAchievements } from '@/lib/achievements'
-import { playLifeLost, playNudge, playMilestone } from '@/lib/sounds'
+import { playLifeLost, playNudge } from '@/lib/sounds'
 import type {
   Achievement,
   FocusAnalysis,
@@ -92,7 +92,6 @@ export const useSessionStore = create<StoreState>()(
         const milestone = checkMilestone(session, next)
         if (next.livesLost > session.livesLost) playLifeLost()
         else playNudge()
-        if (milestone) playMilestone()
         set({
           session: next,
           latestRoast: { message: analysis.roast, status: analysis.status },

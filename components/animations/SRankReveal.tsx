@@ -69,8 +69,6 @@ function makeEmbers(count: number) {
 export default function SRankReveal({ active, onComplete, onShake }: SRankRevealProps) {
   const [phase, setPhase] = useState<Phase>('idle')
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
-  const stopRumbleRef = useRef<(() => void) | null>(null)
-  const audioCtxRef = useRef<AudioContext | null>(null)
 
   const trail = useMemo(() => makeTrailDots(6), [])
   const cracks = useMemo(() => makeCracks(7), [])
@@ -95,9 +93,12 @@ export default function SRankReveal({ active, onComplete, onShake }: SRankReveal
       return
     }
 
-    // Create audio context
+    // Local audio state — captured by cleanup closure to avoid ref leak
+    let ctx: AudioContext | null = null
+    let stopRumble: (() => void) | null = null
+
     try {
-      audioCtxRef.current = new AudioContext()
+      ctx = new AudioContext()
     } catch {
       // Audio not available
     }
@@ -111,28 +112,28 @@ export default function SRankReveal({ active, onComplete, onShake }: SRankReveal
     // Phase: meteor (0ms)
     setPhase('meteor')
     onShake(true)
-    if (audioCtxRef.current) {
-      stopRumbleRef.current = playSRankRumble(audioCtxRef.current)
+    if (ctx) {
+      stopRumble = playSRankRumble(ctx)
     }
 
     // Phase: impact (800ms)
     schedule(() => {
       setPhase('impact')
       onShake(false)
-      if (stopRumbleRef.current) {
-        stopRumbleRef.current()
-        stopRumbleRef.current = null
+      if (stopRumble) {
+        stopRumble()
+        stopRumble = null
       }
-      if (audioCtxRef.current) {
-        playSRankImpact(audioCtxRef.current)
+      if (ctx) {
+        playSRankImpact(ctx)
       }
     }, 800)
 
     // Phase: emerge (1200ms)
     schedule(() => {
       setPhase('emerge')
-      if (audioCtxRef.current) {
-        playSRankEmerge(audioCtxRef.current)
+      if (ctx) {
+        playSRankEmerge(ctx)
       }
     }, 1200)
 
@@ -155,16 +156,8 @@ export default function SRankReveal({ active, onComplete, onShake }: SRankReveal
     return () => {
       timersRef.current.forEach(clearTimeout)
       timersRef.current = []
-      if (stopRumbleRef.current) {
-        stopRumbleRef.current()
-        stopRumbleRef.current = null
-      }
-      try {
-        audioCtxRef.current?.close()
-      } catch {
-        // already closed
-      }
-      audioCtxRef.current = null
+      if (stopRumble) stopRumble()
+      try { ctx?.close() } catch { /* already closed */ }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active])

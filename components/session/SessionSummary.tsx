@@ -104,6 +104,8 @@ export default function SessionSummary() {
       if (pct >= 80) {
         setShowConfetti(true)
         playConfetti()
+        // Remove confetti DOM nodes after animations finish (max 5s + 1s delay + 1s buffer)
+        setTimeout(() => setShowConfetti(false), 7000)
       } else if (pct < 60) {
         playTrombone()
       }

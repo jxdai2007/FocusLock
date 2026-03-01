@@ -211,7 +211,7 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
               <Button
                 className="w-full bg-amber-500 text-black font-bold hover:bg-amber-400 disabled:opacity-40 text-game tracking-widest uppercase"
                 disabled={!taskDescription.trim()}
-                onClick={() => { playClick(); handleSubmit() }}
+                onClick={handleSubmit}
               >
                 🔒 Lock In
               </Button>

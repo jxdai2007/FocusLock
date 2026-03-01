@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { motion } from 'framer-motion'
 import { mergeAchievements } from '@/lib/achievements'
 import { playClick } from '@/lib/sounds'
@@ -20,7 +20,7 @@ const cardStyle   = { overflow: 'hidden' as const, flexShrink: 0, borderRadius: 
 
 export default function AchievementsPanel() {
   const userStats    = useSessionStore((s) => s.userStats)
-  const achievements = mergeAchievements(userStats.achievements)
+  const achievements = useMemo(() => mergeAchievements(userStats.achievements), [userStats.achievements])
   const unlockedCount = achievements.filter((a) => a.unlocked).length
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
