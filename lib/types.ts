@@ -39,6 +39,7 @@ export interface SessionState {
   hadComeback: boolean
   hasShield: boolean
   hasRevive: boolean
+  captureInterval: number
 }
 
 export interface DistractionEvent {
@@ -138,4 +139,14 @@ export interface StudyRoom {
   createdAt: number
   players: Record<string, RoomPlayer>
   isActive: boolean
+}
+
+export interface AppSettings {
+  soundEnabled: boolean
+  soundVolume: number
+  roastToastsEnabled: boolean
+  milestoneToastsEnabled: boolean
+  voiceRoastsEnabled: boolean
+  webcamPreviewVisible: boolean
+  captureInterval: number
 }

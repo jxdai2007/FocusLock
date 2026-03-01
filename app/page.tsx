@@ -12,6 +12,8 @@ import InventoryPanel from '@/components/gamification/InventoryPanel'
 import Shop from '@/components/gamification/Shop'
 import RoomLobby from '@/components/multiplayer/RoomLobby'
 import MultiplayerDashboard from '@/components/multiplayer/MultiplayerDashboard'
+import SettingsButton from '@/components/settings/SettingsButton'
+import SettingsPanel from '@/components/settings/SettingsPanel'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
 import { playClick } from '@/lib/sounds'
@@ -81,6 +83,7 @@ export default function Home() {
 
   const [showShop, setShowShop] = useState(false)
   const [showLobby, setShowLobby] = useState(false)
+  const [showSettings, setShowSettings] = useState(false)
 
   // Ember burst on transitions (setup→active and summary→idle)
   const [showEmbers, setShowEmbers] = useState(false)
@@ -430,6 +433,12 @@ export default function Home() {
             onRoomStart={() => { setShowLobby(false); openSetup() }}
           />
         )}
+      </AnimatePresence>
+
+      {/* ── Settings ── */}
+      <SettingsButton onOpen={() => setShowSettings(true)} />
+      <AnimatePresence>
+        {showSettings && <SettingsPanel onClose={() => setShowSettings(false)} />}
       </AnimatePresence>
     </>
   )

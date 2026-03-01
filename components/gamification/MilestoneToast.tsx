@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { playMilestone } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -24,6 +25,7 @@ const CONFETTI_COLORS = [
 export default function MilestoneToast() {
   const latestMilestone = useSessionStore((s) => s.latestMilestone)
   const clearMilestone = useSessionStore((s) => s.clearMilestone)
+  const milestoneToastsEnabled = useSettingsStore((s) => s.milestoneToastsEnabled)
 
   // Auto-dismiss after 3.5 seconds
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -54,7 +56,7 @@ export default function MilestoneToast() {
   return (
     <div className="pointer-events-none fixed left-1/2 top-8 z-[60] -translate-x-1/2">
       <AnimatePresence>
-        {latestMilestone && (
+        {latestMilestone && milestoneToastsEnabled && (
           <motion.div
             key={latestMilestone}
             className="relative max-w-sm rounded-2xl border-2 border-yellow-500/60 bg-zinc-900/90 px-6 py-4 shadow-[0_0_30px_rgba(250,204,21,0.25)] backdrop-blur-md"

@@ -23,6 +23,7 @@ import { calculateCoins } from '@/lib/focusEngine'
 import { playClick } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 // ---------------------------------------------------------------------------
 // Stagger animation variants
@@ -80,6 +81,8 @@ function StatCard({ icon, label, value, colorClass, animateKey }: StatCardProps)
 export default function SessionActive() {
   const { session, latestRoast, isGameOver, pauseSession, resumeSession, endSession } =
     useSessionStore()
+
+  const roastToastsEnabled = useSettingsStore((s) => s.roastToastsEnabled)
 
   const webcamRef = useRef<WebcamHandle>(null)
   useSessionLoop(webcamRef)
@@ -318,7 +321,7 @@ export default function SessionActive() {
         {/* ── Speech bubble ── */}
         <div className="flex h-16 items-center justify-center">
           <AnimatePresence mode="wait">
-            {displayedRoast && (
+            {displayedRoast && roastToastsEnabled && (
               <motion.div
                 key={displayedRoast.message}
                 className="relative flex max-w-sm items-start gap-2 rounded-2xl bg-zinc-800/80 px-5 py-3 backdrop-blur-sm"

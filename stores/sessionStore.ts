@@ -118,6 +118,13 @@ export const useSessionStore = create<StoreState>()(
           session = { ...session, hasRevive: true }
         }
 
+        // Bake capture interval from settings
+        try {
+          const { useSettingsStore } = require('@/stores/settingsStore')
+          const { captureInterval } = useSettingsStore.getState()
+          session = { ...session, captureInterval: captureInterval ?? 12 }
+        } catch { /* settings store not available */ }
+
         set({
           session,
           appState: 'active',
@@ -132,7 +139,7 @@ export const useSessionStore = create<StoreState>()(
       processAnalysis: (analysis: FocusAnalysis) => {
         const { session } = get()
         if (!session) return
-        let next = updateSession(session, analysis, 12)
+        let next = updateSession(session, analysis, session.captureInterval ?? 12)
         const milestone = checkMilestone(session, next)
         let roast = analysis.roast
         let lifeLost = next.livesLost > session.livesLost

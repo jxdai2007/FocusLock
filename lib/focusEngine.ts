@@ -30,6 +30,7 @@ export function createInitialState(config: SessionConfig): SessionState {
     hadComeback: false,
     hasShield: false,
     hasRevive: false,
+    captureInterval: 12,
   }
 }
 

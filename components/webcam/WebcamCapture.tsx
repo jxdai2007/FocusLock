@@ -2,6 +2,7 @@
 
 import React, { useEffect, useImperativeHandle, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 export interface WebcamHandle {
   captureFrame(): string | null
@@ -14,6 +15,7 @@ interface WebcamCaptureProps {
 }
 
 const WebcamCapture = React.forwardRef<WebcamHandle, WebcamCaptureProps>((_props, ref) => {
+  const webcamPreviewVisible = useSettingsStore((s) => s.webcamPreviewVisible)
   const [status, setStatus] = useState<Status>('loading')
   const [retryKey, setRetryKey] = useState(0)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -70,7 +72,10 @@ const WebcamCapture = React.forwardRef<WebcamHandle, WebcamCaptureProps>((_props
   )
 
   return (
-    <div className="relative h-[150px] w-[200px] overflow-hidden rounded-xl border border-zinc-700/50 bg-zinc-900/40 backdrop-blur-md">
+    <div
+      className="relative h-[150px] w-[200px] overflow-hidden rounded-xl border border-zinc-700/50 bg-zinc-900/40 backdrop-blur-md"
+      style={{ visibility: webcamPreviewVisible ? 'visible' : 'hidden' }}
+    >
       <canvas ref={canvasRef} className="hidden" />
       <video ref={videoRef} muted playsInline className="h-full w-full object-cover" />
 

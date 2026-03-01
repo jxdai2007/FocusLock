@@ -82,7 +82,8 @@ export function useSessionLoop(webcamRef: RefObject<WebcamHandle>) {
 
     loopRef.current = true
 
-    const analysisId = setInterval(runTick, 12_000)
+    const interval = useSessionStore.getState().session?.captureInterval ?? 12
+    const analysisId = setInterval(runTick, interval * 1000)
 
     const tickId = setInterval(() => {
       const { session, endSession } = useSessionStore.getState()

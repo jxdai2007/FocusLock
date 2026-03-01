@@ -26,11 +26,23 @@ let clickSound: Howl | null = null
 let confettiSound: Howl | null = null
 let tromboneSound: Howl | null = null
 
+function getSettings(): { soundEnabled: boolean; soundVolume: number } {
+  try {
+    const { useSettingsStore } = require('@/stores/settingsStore')
+    const { soundEnabled, soundVolume } = useSettingsStore.getState()
+    return { soundEnabled, soundVolume }
+  } catch {
+    return { soundEnabled: true, soundVolume: 0.3 }
+  }
+}
+
 function play(getOrCreate: () => Howl, volume: number) {
   if (!canPlay()) return
+  const { soundEnabled, soundVolume } = getSettings()
+  if (!soundEnabled) return
   try {
     const sound = getOrCreate()
-    sound.volume(volume)
+    sound.volume(volume * soundVolume)
     sound.play()
   } catch {
     // silently ignore — missing file or SSR context
@@ -39,9 +51,11 @@ function play(getOrCreate: () => Howl, volume: number) {
 
 /** Play immediately, bypassing the global cooldown (for important sounds). */
 function playImmediate(getOrCreate: () => Howl, volume: number) {
+  const { soundEnabled, soundVolume } = getSettings()
+  if (!soundEnabled) return
   try {
     const sound = getOrCreate()
-    sound.volume(volume)
+    sound.volume(volume * soundVolume)
     sound.play()
   } catch {
     // silently ignore
