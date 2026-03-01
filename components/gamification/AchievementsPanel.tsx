@@ -47,7 +47,7 @@ export default function AchievementsPanel() {
             return (
               <div
                 key={rowIdx}
-                className="flex gap-2 overflow-hidden"
+                className="flex overflow-hidden"
                 style={{ height: CARD_SIZE }}
               >
                 {row.map((a, colIdx) => {
@@ -55,6 +55,7 @@ export default function AchievementsPanel() {
                   const isDismissed = hasSelection && !isSelected
                   // dismissed items slide TOWARD the selected item
                   const exitX = colIdx < selIdx ? 80 : -80
+                  const isLastInRow = colIdx === row.length - 1
 
                   return (
                     <motion.div
@@ -64,6 +65,7 @@ export default function AchievementsPanel() {
                         width:   isDismissed ? 0 : isSelected ? ROW_WIDTH : CARD_SIZE,
                         x:       isDismissed ? exitX : 0,
                         opacity: isDismissed ? 0 : 1,
+                        marginRight: isDismissed || isSelected || isLastInRow ? 0 : 8,
                         paddingTop:    isDismissed ? 0 : 12,
                         paddingBottom: isDismissed ? 0 : 12,
                         paddingLeft:   isDismissed ? 0 : 12,
