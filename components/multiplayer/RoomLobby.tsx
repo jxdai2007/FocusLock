@@ -3,8 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { playClick } from '@/lib/sounds'
+import { startRoom } from '@/lib/rooms'
 import { useMultiplayerStore } from '@/stores/multiplayerStore'
-import { database, ref, update } from '@/lib/firebase'
 
 interface RoomLobbyProps {
   onClose: () => void
@@ -102,7 +102,7 @@ export default function RoomLobby({ onClose, onRoomStart }: RoomLobbyProps) {
 
   async function handleStartTogether() {
     if (!roomCode) return
-    await update(ref(database, `rooms/${roomCode}`), { isActive: true })
+    await startRoom(roomCode)
   }
 
   const players = room?.players ? Object.values(room.players) : []

@@ -17,6 +17,7 @@ import AnimatedNumber from '@/components/animations/AnimatedNumber'
 import ConfettiExplosion from '@/components/animations/ConfettiExplosion'
 import SRankReveal from '@/components/animations/SRankReveal'
 import { generateSessionReview } from '@/lib/gemini'
+import { getSortedPlayers } from '@/lib/rooms'
 import { playClick, playCoinEarned, playConfetti, playMilestone, playTrombone } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -384,9 +385,7 @@ export default function SessionSummary() {
                   👥 Room Results
                 </p>
                 <div className="flex flex-col gap-1.5">
-                  {Object.values(room.players)
-                    .sort((a, b) => b.focusScore - a.focusScore)
-                    .map((player, i) => {
+                  {getSortedPlayers(room).map((player, i) => {
                       const isSelf = player.id === playerId
                       return (
                         <div

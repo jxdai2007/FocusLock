@@ -1,4 +1,4 @@
-import { database, ref, set, onValue, remove, update, get, off } from '@/lib/firebase'
+import { database, ref, set, onValue, remove, update, get } from '@/lib/firebase'
 import type { RoomPlayer, StudyRoom } from '@/lib/types'
 
 const CHARS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -11,9 +11,36 @@ export function generateRoomCode(): string {
   return code
 }
 
+function generatePlayerId(): string {
+  return Math.random().toString(36).substring(2, 10)
+}
+
+function createDefaultPlayer(id: string, name: string): RoomPlayer {
+  return {
+    id,
+    name,
+    focusScore: 100,
+    currentStreak: 0,
+    lives: 0,
+    livesTotal: 0,
+    status: 'idle',
+    lastUpdate: Date.now(),
+    coinsEarned: 0,
+  }
+}
+
+export function getSortedPlayers(room: StudyRoom | null): RoomPlayer[] {
+  if (!room?.players) return []
+  return Object.values(room.players).sort((a, b) => b.focusScore - a.focusScore)
+}
+
+export async function startRoom(roomCode: string): Promise<void> {
+  await update(ref(database, `rooms/${roomCode}`), { isActive: true })
+}
+
 export async function createRoom(playerName: string): Promise<{ roomCode: string; playerId: string }> {
   const roomCode = generateRoomCode()
-  const playerId = Math.random().toString(36).substring(2, 10)
+  const playerId = generatePlayerId()
 
   const roomRef = ref(database, `rooms/${roomCode}`)
   await set(roomRef, {
@@ -25,18 +52,7 @@ export async function createRoom(playerName: string): Promise<{ roomCode: string
   })
 
   const playerRef = ref(database, `rooms/${roomCode}/players/${playerId}`)
-  await set(playerRef, {
-    id: playerId,
-    name: playerName,
-    focusScore: 100,
-    currentStreak: 0,
-    lives: 0,
-    livesTotal: 0,
-    status: 'idle',
-    lastUpdate: Date.now(),
-    flameIntensity: 30,
-    coinsEarned: 0,
-  } satisfies RoomPlayer)
+  await set(playerRef, createDefaultPlayer(playerId, playerName))
 
   localStorage.setItem('focuslock-playerId', playerId)
   localStorage.setItem('focuslock-roomCode', roomCode)
@@ -57,21 +73,10 @@ export async function joinRoom(
   const playerCount = room.players ? Object.keys(room.players).length : 0
   if (playerCount >= 6) return null
 
-  const playerId = Math.random().toString(36).substring(2, 10)
+  const playerId = generatePlayerId()
 
   const playerRef = ref(database, `rooms/${roomCode}/players/${playerId}`)
-  await set(playerRef, {
-    id: playerId,
-    name: playerName,
-    focusScore: 100,
-    currentStreak: 0,
-    lives: 0,
-    livesTotal: 0,
-    status: 'idle',
-    lastUpdate: Date.now(),
-    flameIntensity: 30,
-    coinsEarned: 0,
-  } satisfies RoomPlayer)
+  await set(playerRef, createDefaultPlayer(playerId, playerName))
 
   localStorage.setItem('focuslock-playerId', playerId)
   localStorage.setItem('focuslock-roomCode', roomCode)
@@ -84,11 +89,11 @@ export function subscribeToRoom(
   callback: (room: StudyRoom | null) => void,
 ): () => void {
   const roomRef = ref(database, `rooms/${roomCode}`)
-  const handler = onValue(roomRef, (snapshot) => {
+  const unsubscribe = onValue(roomRef, (snapshot) => {
     callback(snapshot.val() as StudyRoom | null)
   })
 
-  return () => off(roomRef, 'value', handler)
+  return unsubscribe
 }
 
 export async function updatePlayerState(

@@ -1,10 +1,12 @@
 'use client'
 
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Heart } from 'lucide-react'
 import { useMultiplayerStore } from '@/stores/multiplayerStore'
+import { getSortedPlayers } from '@/lib/rooms'
 import { playClick } from '@/lib/sounds'
+import { formatDuration } from '@/lib/utils'
 import type { RoomPlayer } from '@/lib/types'
 
 // ---------------------------------------------------------------------------
@@ -20,7 +22,10 @@ interface PlayerRowProps {
 function PlayerRow({ player, rank, isSelf }: PlayerRowProps) {
   const prevScoreRef = useRef(player.focusScore)
   const scoreDrop = player.focusScore < prevScoreRef.current
-  prevScoreRef.current = player.focusScore
+
+  useEffect(() => {
+    prevScoreRef.current = player.focusScore
+  }, [player.focusScore])
 
   const statusColor =
     player.status === 'focused'
@@ -82,9 +87,7 @@ function PlayerRow({ player, rank, isSelf }: PlayerRowProps) {
           <span className={`h-1.5 w-1.5 rounded-full ${statusColor}`} />
           {player.currentStreak > 0 && (
             <span className="text-[9px] text-amber-400/80">
-              {Math.floor(player.currentStreak / 60) > 0
-                ? `${Math.floor(player.currentStreak / 60)}m streak`
-                : `${Math.round(player.currentStreak)}s streak`}
+              {formatDuration(player.currentStreak)} streak
             </span>
           )}
         </div>
@@ -130,10 +133,7 @@ interface MultiplayerDashboardProps {
 export default function MultiplayerDashboard({ children }: MultiplayerDashboardProps) {
   const { roomCode, playerId, room, leaveRoom } = useMultiplayerStore()
 
-  const players = useMemo(() => {
-    if (!room?.players) return []
-    return Object.values(room.players).sort((a, b) => b.focusScore - a.focusScore)
-  }, [room?.players])
+  const players = useMemo(() => getSortedPlayers(room), [room])
 
   const playerCount = players.length
 

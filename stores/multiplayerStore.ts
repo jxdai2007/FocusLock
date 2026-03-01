@@ -6,8 +6,7 @@ import {
   subscribeToRoom,
   updatePlayerState,
 } from '@/lib/rooms'
-import { database, ref, update } from '@/lib/firebase'
-import type { RoomPlayer, StudyRoom, SessionState, SessionConfig } from '@/lib/types'
+import type { RoomPlayer, StudyRoom, SessionState } from '@/lib/types'
 
 interface MultiplayerState {
   roomCode: string | null
@@ -23,6 +22,7 @@ interface MultiplayerState {
   leaveRoom: () => Promise<void>
   setRoom: (room: StudyRoom | null) => void
   syncLocalState: (session: SessionState) => void
+  flushSync: (session: SessionState) => void
   markIdle: () => void
   clearError: () => void
 }
@@ -43,6 +43,17 @@ function removeBeforeUnload() {
   if (beforeUnloadHandler) {
     window.removeEventListener('beforeunload', beforeUnloadHandler)
     beforeUnloadHandler = null
+  }
+}
+
+function buildSyncPayload(session: SessionState): Partial<RoomPlayer> {
+  return {
+    focusScore: session.focusScore,
+    currentStreak: session.currentStreak,
+    lives: session.lives,
+    livesTotal: session.config.lives,
+    status: session.lastAnalysis?.status ?? 'focused',
+    coinsEarned: session.coinsEarned,
   }
 }
 
@@ -116,15 +127,14 @@ export const useMultiplayerStore = create<MultiplayerState>()((set, get) => ({
     if (now - lastSyncTime < 3000) return
     lastSyncTime = now
 
-    updatePlayerState(roomCode, playerId, {
-      focusScore: session.focusScore,
-      currentStreak: session.currentStreak,
-      lives: session.lives,
-      livesTotal: session.config.lives,
-      status: session.lastAnalysis?.status ?? 'focused',
-      flameIntensity: session.focusScore,
-      coinsEarned: session.coinsEarned,
-    })
+    updatePlayerState(roomCode, playerId, buildSyncPayload(session))
+  },
+
+  flushSync: (session: SessionState) => {
+    const { roomCode, playerId } = get()
+    if (!roomCode || !playerId) return
+    lastSyncTime = Date.now()
+    updatePlayerState(roomCode, playerId, buildSyncPayload(session))
   },
 
   markIdle: () => {

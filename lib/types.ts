@@ -129,7 +129,6 @@ export interface RoomPlayer {
   livesTotal: number
   status: 'focused' | 'distracted' | 'away' | 'idle'
   lastUpdate: number
-  flameIntensity: number
   coinsEarned: number
 }
 

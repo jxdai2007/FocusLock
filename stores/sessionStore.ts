@@ -268,11 +268,14 @@ export const useSessionStore = create<StoreState>()(
           newlyUnlockedAchievements: newlyUnlocked,
         })
 
-        // Mark player as idle in multiplayer room
+        // Flush final state + mark idle in multiplayer room
         try {
           const { useMultiplayerStore } = require('@/stores/multiplayerStore')
           const mp = useMultiplayerStore.getState()
-          if (mp.isInRoom) mp.markIdle()
+          if (mp.isInRoom) {
+            mp.flushSync(session)
+            mp.markIdle()
+          }
         } catch { /* multiplayer store not available */ }
       },
 
