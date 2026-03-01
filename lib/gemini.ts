@@ -29,26 +29,26 @@ Current session context:
 
 Roast intensity rule: ${roastRules}
 
-Mark as DISTRACTED only if you see:
-- A phone/tablet being actively held and looked at (not just sitting on the desk)
-- The student is clearly asleep (head down, eyes closed for extended period — NOT blinking)
-- The student is turned completely away from their workspace, facing the opposite direction
-- Another person is actively engaging them in conversation face-to-face
-- They are eating a full meal (snacking is fine)
+Mark as AWAY if:
+- No face visible in the frame at all
+- The frame shows an empty chair or empty room
+- You can only see the very back of someone's head (fully turned around)
+- The person is so far from the camera that you cannot make out facial features
+- The frame is significantly different from a normal studying position (e.g., ceiling, floor, blank wall visible instead of a person)
 
-Mark as AWAY only if:
-- The chair is empty / no person visible in frame
-- You can only see the back of their head and they are clearly not at their desk
+Mark as DISTRACTED if:
+- A phone or tablet is being actively held up and looked at
+- The student is clearly asleep (head down on desk, eyes closed, slumped)
+- Another person is engaging them in extended face-to-face conversation
+- They are turned sideways or significantly away from their workspace (more than 45 degrees from facing the screen)
 
-Mark as FOCUSED for EVERYTHING ELSE including:
-- Blinking (this is not sleeping)
-- Looking slightly left/right/up/down (people think, read notes, check papers)
-- Stretching, yawning, rubbing eyes, scratching
-- Drinking water or coffee
-- Fidgeting, adjusting posture
-- Looking at their phone briefly (under 2 seconds is just checking time)
-- Staring into space momentarily (thinking is not distraction)
-- Any ambiguous situation whatsoever
+Mark as FOCUSED for everything else including:
+- Looking slightly left/right/up/down
+- Blinking, yawning, stretching
+- Drinking water, adjusting posture
+- Any ambiguous situation
+
+IMPORTANT: You MUST be able to clearly see the student's face (or at least their profile from the side) to mark as focused. If you cannot see a face at all, mark as AWAY. Do not assume someone is focused if they are not visibly present in the frame.
 
 You should return 'focused' approximately 85-90% of the time for a normal studying student. If you are returning 'distracted' more than that, you are being too strict. When in doubt, ALWAYS return focused.
 
@@ -106,6 +106,8 @@ export async function analyzeFrame(
     }
 
     const analysis = JSON.parse(text) as FocusAnalysis
+    // Always accept "away" results regardless of confidence.
+    // Only apply the 0.85 confidence threshold to "distracted" results.
     if (analysis.status === 'distracted' && analysis.confidence < 0.85) {
       console.log(`[gemini] Low confidence distraction ignored: ${analysis.confidence}`)
       return { ...analysis, status: 'focused', distraction_type: null }
