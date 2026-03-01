@@ -25,6 +25,7 @@ let igniteSound: Howl | null = null
 let clickSound: Howl | null = null
 let confettiSound: Howl | null = null
 let tromboneSound: Howl | null = null
+let tntSound: Howl | null = null
 
 function getSettings(): { soundEnabled: boolean; soundVolume: number } {
   try {
@@ -123,4 +124,12 @@ export function playTrombone() {
     tromboneSound ??= new Howl({ src: ['/sounds/trombone.mp3'] })
     return tromboneSound
   }, 0.45)
+}
+
+export function playTNT() {
+  // Bypasses cooldown — fires alongside impact sounds
+  playImmediate(() => {
+    tntSound ??= new Howl({ src: ['/sounds/tnt.mp3'] })
+    return tntSound
+  }, 0.5)
 }

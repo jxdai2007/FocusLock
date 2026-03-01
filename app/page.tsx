@@ -111,12 +111,14 @@ export default function Home() {
 
   return (
     <>
-      {/* ── Ambient background mood ── */}
-      <AmbientMood
-        focusScore={session?.focusScore ?? 100}
-        isActive={isSessionActive}
-        lifeLostTrigger={session?.livesLost ?? 0}
-      />
+      {/* ── Ambient background mood (hidden during summary) ── */}
+      {appState !== 'summary' && (
+        <AmbientMood
+          focusScore={session?.focusScore ?? 100}
+          isActive={isSessionActive}
+          lifeLostTrigger={session?.livesLost ?? 0}
+        />
+      )}
 
       {/* ── Ember burst particles for transitions ── */}
       <AnimatePresence>

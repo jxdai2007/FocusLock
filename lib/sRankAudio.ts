@@ -103,6 +103,41 @@ export function playSRankImpact(ctx: AudioContext): void {
 }
 
 /**
+ * Minecraft-style "block breaking" bass hit.
+ * Low-pass-filtered white noise burst layered on the existing impact.
+ */
+export function playSRankBlockBreak(ctx: AudioContext): void {
+  try {
+    const now = ctx.currentTime
+
+    const bufferSize = Math.floor(ctx.sampleRate * 0.15)
+    const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate)
+    const data = noiseBuffer.getChannelData(0)
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1
+    }
+
+    const noise = ctx.createBufferSource()
+    noise.buffer = noiseBuffer
+
+    const lowpass = ctx.createBiquadFilter()
+    lowpass.type = 'lowpass'
+    lowpass.frequency.value = 200
+
+    const gain = ctx.createGain()
+    gain.gain.setValueAtTime(0.3, now)
+    gain.gain.linearRampToValueAtTime(0, now + 0.15)
+
+    noise.connect(lowpass)
+    lowpass.connect(gain)
+    gain.connect(ctx.destination)
+    noise.start(now)
+  } catch {
+    // Audio not available
+  }
+}
+
+/**
  * Rising sine sweep as the S letter emerges through cracks.
  * 200 Hz → 600 Hz over 0.3s, gain 0.1 → 0.
  */

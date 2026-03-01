@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import MinecraftExplosion from '@/components/animations/MinecraftExplosion'
 import { playSRankRumble, playSRankImpact, playSRankEmerge } from '@/lib/sRankAudio'
+import { playTNT } from '@/lib/sounds'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,6 +70,7 @@ function makeEmbers(count: number) {
 
 export default function SRankReveal({ active, onComplete, onShake }: SRankRevealProps) {
   const [phase, setPhase] = useState<Phase>('idle')
+  const [showMCParticles, setShowMCParticles] = useState(false)
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([])
 
   const trail = useMemo(() => makeTrailDots(6), [])
@@ -84,6 +87,7 @@ export default function SRankReveal({ active, onComplete, onShake }: SRankReveal
   useEffect(() => {
     if (!active) {
       setPhase('idle')
+      setShowMCParticles(false)
       return
     }
 
@@ -127,7 +131,13 @@ export default function SRankReveal({ active, onComplete, onShake }: SRankReveal
       if (ctx) {
         playSRankImpact(ctx)
       }
+      playTNT()
     }, 800)
+
+    // Minecraft particles — 100ms after impact so flash peaks first
+    schedule(() => {
+      setShowMCParticles(true)
+    }, 900)
 
     // Phase: emerge (1200ms)
     schedule(() => {
@@ -273,6 +283,9 @@ export default function SRankReveal({ active, onComplete, onShake }: SRankReveal
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ── Minecraft explosion particles ── */}
+      <MinecraftExplosion active={showMCParticles} />
 
       {/* ── Cracks ── */}
       <AnimatePresence>
