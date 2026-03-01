@@ -21,6 +21,7 @@ let burnSound: Howl | null = null
 let pingSound: Howl | null = null
 let coinSound: Howl | null = null
 let fanfareSound: Howl | null = null
+let igniteSound: Howl | null = null
 let clickSound: Howl | null = null
 let confettiSound: Howl | null = null
 let tromboneSound: Howl | null = null
@@ -36,6 +37,17 @@ function play(getOrCreate: () => Howl, volume: number) {
   }
 }
 
+/** Play immediately, bypassing the global cooldown (for important sounds). */
+function playImmediate(getOrCreate: () => Howl, volume: number) {
+  try {
+    const sound = getOrCreate()
+    sound.volume(volume)
+    sound.play()
+  } catch {
+    // silently ignore
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
@@ -44,47 +56,57 @@ export function playLifeLost() {
   play(() => {
     burnSound ??= new Howl({ src: ['/sounds/burn.mp3'] })
     return burnSound
-  }, 0.4)
+  }, 0.5)
 }
 
 export function playNudge() {
   play(() => {
     pingSound ??= new Howl({ src: ['/sounds/ping.mp3'] })
     return pingSound
-  }, 0.3)
+  }, 0.4)
 }
 
 export function playCoinEarned() {
   play(() => {
     coinSound ??= new Howl({ src: ['/sounds/coin.mp3'] })
     return coinSound
-  }, 0.3)
+  }, 0.45)
 }
 
 export function playMilestone() {
-  play(() => {
+  // Bypasses cooldown — this is a big moment, never swallowed
+  playImmediate(() => {
     fanfareSound ??= new Howl({ src: ['/sounds/fanfare.mp3'] })
     return fanfareSound
-  }, 0.35)
+  }, 0.55)
+}
+
+export function playIgnite() {
+  playImmediate(() => {
+    igniteSound ??= new Howl({ src: ['/sounds/ignite.mp3'] })
+    return igniteSound
+  }, 0.5)
 }
 
 export function playClick() {
   play(() => {
     clickSound ??= new Howl({ src: ['/sounds/click.mp3'] })
     return clickSound
-  }, 0.25)
-}
-
-export function playConfetti() {
-  play(() => {
-    confettiSound ??= new Howl({ src: ['/sounds/confetti.mp3'] })
-    return confettiSound
   }, 0.35)
 }
 
+export function playConfetti() {
+  // Bypasses cooldown — fires alongside other celebration sounds
+  playImmediate(() => {
+    confettiSound ??= new Howl({ src: ['/sounds/confetti.mp3'] })
+    return confettiSound
+  }, 0.5)
+}
+
 export function playTrombone() {
-  play(() => {
+  // Bypasses cooldown — fires alongside coin sound
+  playImmediate(() => {
     tromboneSound ??= new Howl({ src: ['/sounds/trombone.mp3'] })
     return tromboneSound
-  }, 0.3)
+  }, 0.45)
 }

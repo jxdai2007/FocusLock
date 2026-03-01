@@ -17,7 +17,7 @@ import AnimatedNumber from '@/components/animations/AnimatedNumber'
 import ConfettiExplosion from '@/components/animations/ConfettiExplosion'
 import SRankReveal from '@/components/animations/SRankReveal'
 import { generateSessionReview } from '@/lib/gemini'
-import { playClick, playCoinEarned, playConfetti, playTrombone } from '@/lib/sounds'
+import { playClick, playCoinEarned, playConfetti, playMilestone, playTrombone } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -60,6 +60,11 @@ export default function SessionSummary() {
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGameOver])
+
+  // Play fanfare when achievements phase activates
+  useEffect(() => {
+    if (phase === 'achievements') playMilestone()
+  }, [phase])
 
   // Auto-advance: achievements → s-rank or card
   useEffect(() => {
@@ -221,9 +226,12 @@ export default function SessionSummary() {
 
       {/* ── C-rank vignette ── */}
       {phase === 'card' && grade.letter === 'C' && (
-        <div
+        <motion.div
           className="pointer-events-none fixed inset-0 z-[40]"
-          style={{ background: 'radial-gradient(circle, transparent 40%, rgba(0,0,0,0.3) 100%)' }}
+          style={{ background: 'radial-gradient(circle, transparent 30%, rgba(40,0,0,0.5) 100%)' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8 }}
         />
       )}
 
@@ -241,27 +249,27 @@ export default function SessionSummary() {
               {grade.letter === 'S' ? (
                 /* S-rank: already revealed by meteor, continuous golden pulse */
                 <motion.p
-                  className={`text-game text-7xl font-bold ${grade.color}`}
+                  className={`text-game text-8xl font-bold ${grade.color}`}
                   initial={{ scale: 1, opacity: 1 }}
                   animate={{
-                    scale: 1,
+                    scale: [1, 1.05, 1],
                     textShadow: [
-                      '0 0 20px rgba(250,204,21,0.4)',
-                      '0 0 50px rgba(250,204,21,0.7)',
-                      '0 0 20px rgba(250,204,21,0.4)',
+                      '0 0 30px rgba(250,204,21,0.5), 0 0 60px rgba(250,204,21,0.2)',
+                      '0 0 60px rgba(250,204,21,0.9), 0 0 120px rgba(250,204,21,0.4)',
+                      '0 0 30px rgba(250,204,21,0.5), 0 0 60px rgba(250,204,21,0.2)',
                     ],
                   }}
-                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   {grade.letter}
                 </motion.p>
               ) : grade.letter === 'C' ? (
-                /* C-rank: scale up then shake */
+                /* C-rank: scale up then violent shake */
                 <motion.p
                   className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
                   initial={{ scale: 0 }}
-                  animate={{ scale: [0, 1.2, 1], x: [0, 0, 0, -3, 3, -3, 3, -2, 2, 0] }}
-                  transition={{ duration: 0.8, times: [0, 0.3, 0.4, 0.5, 0.57, 0.64, 0.71, 0.78, 0.88, 1] }}
+                  animate={{ scale: [0, 1.2, 1], x: [0, 0, 0, -6, 6, -8, 8, -5, 5, -3, 3, 0] }}
+                  transition={{ duration: 1, times: [0, 0.25, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7, 0.77, 0.84, 0.92, 1] }}
                 >
                   {grade.letter}
                 </motion.p>
@@ -278,10 +286,24 @@ export default function SessionSummary() {
               )}
               {/* Grade subtitle */}
               {grade.letter === 'A' && (
-                <p className="text-xs text-green-400 italic mt-1">Impressive!</p>
+                <motion.p
+                  className="text-sm font-medium text-green-400 italic mt-2"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                >
+                  Impressive!
+                </motion.p>
               )}
               {grade.letter === 'B' && (
-                <p className="text-xs text-zinc-500 italic mt-1">Not bad...</p>
+                <motion.p
+                  className="text-sm text-zinc-400 italic mt-2"
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5, duration: 0.4 }}
+                >
+                  Not bad...
+                </motion.p>
               )}
             </div>
 

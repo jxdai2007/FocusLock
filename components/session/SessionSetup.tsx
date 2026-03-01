@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
-import { playClick } from '@/lib/sounds'
+import { playClick, playIgnite } from '@/lib/sounds'
 import type { SessionConfig } from '@/lib/types'
 
 const DURATION_OPTIONS = [5, 15, 25, 45, 60, 90] // minutes
@@ -39,6 +39,7 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
 
   function handleSubmit() {
     if (!taskDescription.trim()) return
+    playIgnite()
     onStart({
       duration,
       lives,

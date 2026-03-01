@@ -23,8 +23,8 @@ const COLORS = [
 
 function makeConfettiPieces(count: number) {
   return Array.from({ length: count }, (_, i) => {
-    const w = 6 + Math.random() * 6        // 6–12px (w-1.5 to w-3)
-    const h = 8 + Math.random() * 8        // 8–16px (h-2 to h-4)
+    const w = 8 + Math.random() * 10       // 8–18px
+    const h = 10 + Math.random() * 14      // 10–24px
     return {
       id: i,
       x: Math.random() * 100,              // vw position
@@ -32,10 +32,10 @@ function makeConfettiPieces(count: number) {
       height: h,
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
       rounded: Math.random() > 0.5,        // square vs rectangle
-      drift: (Math.random() - 0.5) * 200,  // ±100px horizontal drift
-      rotate: 360 + Math.random() * 360,   // 360–720 deg
-      duration: 2 + Math.random() * 2,     // 2–4s
-      delay: Math.random() * 0.8,          // 0–0.8s
+      drift: (Math.random() - 0.5) * 300,  // ±150px horizontal drift
+      rotate: 360 + Math.random() * 720,   // 360–1080 deg
+      duration: 2.5 + Math.random() * 2.5, // 2.5–5s (slower, more visible)
+      delay: Math.random() * 1.0,          // 0–1.0s (wider stagger)
     }
   })
 }
@@ -44,10 +44,10 @@ function makeStarPieces(count: number, offset: number) {
   return Array.from({ length: count }, (_, i) => ({
     id: offset + i,
     x: Math.random() * 100,
-    drift: (Math.random() - 0.5) * 160,
-    rotate: 360 + Math.random() * 360,
-    duration: 2.5 + Math.random() * 1.5,
-    delay: Math.random() * 0.8,
+    drift: (Math.random() - 0.5) * 250,
+    rotate: 360 + Math.random() * 720,
+    duration: 3 + Math.random() * 2,
+    delay: Math.random() * 1.0,
   }))
 }
 
@@ -84,12 +84,12 @@ export default function ConfettiExplosion({ count = 40, includeStars = false }: 
             y: '120vh',
             x: p.drift,
             rotate: p.rotate,
-            opacity: [1, 1, 1, 0],
+            opacity: [1, 1, 1, 1, 0],
           }}
           transition={{
             duration: p.duration,
             delay: p.delay,
-            ease: 'easeIn',
+            ease: 'linear',
           }}
         />
       ))}
@@ -98,7 +98,7 @@ export default function ConfettiExplosion({ count = 40, includeStars = false }: 
       {stars.map((s) => (
         <motion.span
           key={`s-${s.id}`}
-          className="absolute text-lg"
+          className="absolute text-2xl"
           style={{
             left: `${s.x}%`,
             top: '-10vh',
@@ -107,12 +107,12 @@ export default function ConfettiExplosion({ count = 40, includeStars = false }: 
             y: '120vh',
             x: s.drift,
             rotate: s.rotate,
-            opacity: [1, 1, 1, 0],
+            opacity: [1, 1, 1, 1, 0],
           }}
           transition={{
             duration: s.duration,
             delay: s.delay,
-            ease: 'easeIn',
+            ease: 'linear',
           }}
         >
           ⭐
