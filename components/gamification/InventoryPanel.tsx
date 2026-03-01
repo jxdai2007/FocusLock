@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { getItem } from '@/lib/shop'
+import { getItem, SHOP_ITEMS } from '@/lib/shop'
 import { playClick } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -30,12 +30,15 @@ export default function InventoryPanel({ onOpenShop }: InventoryPanelProps) {
     itemMap.set(id, existing)
   }
 
-  const items = Array.from(itemMap.entries()).map(([id, counts]) => ({
-    id,
-    item: getItem(id),
-    ...counts,
-    total: counts.inInventory + counts.activeCount,
-  }))
+  const shopOrder = SHOP_ITEMS.map((s) => s.id)
+  const items = Array.from(itemMap.entries())
+    .map(([id, counts]) => ({
+      id,
+      item: getItem(id),
+      ...counts,
+      total: counts.inInventory + counts.activeCount,
+    }))
+    .sort((a, b) => shopOrder.indexOf(a.id) - shopOrder.indexOf(b.id))
 
   const isEmpty = items.length === 0
 

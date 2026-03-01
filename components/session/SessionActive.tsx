@@ -17,6 +17,7 @@ import FocusFlame from '@/components/flame/FocusFlame'
 import WebcamCapture, { type WebcamHandle } from '@/components/webcam/WebcamCapture'
 import ScanLines from '@/components/animations/ScanLines'
 import Shockwave from '@/components/animations/Shockwave'
+import TypewriterText from '@/components/roast/TypewriterText'
 import { useFlameState } from '@/hooks/useFlameState'
 import { useSessionLoop } from '@/hooks/useSessionLoop'
 import { calculateCoins } from '@/lib/focusEngine'
@@ -340,7 +341,9 @@ export default function SessionActive() {
                   }}
                 />
                 <span className="text-lg leading-snug">{roastEmoji}</span>
-                <p className="text-sm italic text-zinc-200">{displayedRoast.message}</p>
+                <p className="text-sm italic text-zinc-200">
+                  <TypewriterText text={displayedRoast.message} speed={25} />
+                </p>
               </motion.div>
             )}
           </AnimatePresence>

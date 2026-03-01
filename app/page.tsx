@@ -14,6 +14,7 @@ import RoomLobby from '@/components/multiplayer/RoomLobby'
 import MultiplayerDashboard from '@/components/multiplayer/MultiplayerDashboard'
 import SettingsButton from '@/components/settings/SettingsButton'
 import SettingsPanel from '@/components/settings/SettingsPanel'
+import AmbientMood from '@/components/effects/AmbientMood'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
 import { playClick } from '@/lib/sounds'
@@ -106,8 +107,17 @@ export default function Home() {
     }
   }, [appState, session?.lastAnalysis?.status])
 
+  const isSessionActive = appState === 'active' || appState === 'paused'
+
   return (
     <>
+      {/* ── Ambient background mood ── */}
+      <AmbientMood
+        focusScore={session?.focusScore ?? 100}
+        isActive={isSessionActive}
+        lifeLostTrigger={session?.livesLost ?? 0}
+      />
+
       {/* ── Ember burst particles for transitions ── */}
       <AnimatePresence>
         {showEmbers && (
@@ -124,7 +134,7 @@ export default function Home() {
 
       {/* ── Page content — AnimatePresence mode="wait" ── */}
       <AnimatePresence mode="wait">
-        {(appState === 'active' || appState === 'paused') && (
+        {isSessionActive && (
           <motion.div
             key="active"
             initial={{ opacity: 0 }}
@@ -172,16 +182,6 @@ export default function Home() {
               </div>
 
             <main className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden px-4 py-12">
-
-              {/* Ambient warm glow */}
-              <div
-                aria-hidden
-                className="pointer-events-none absolute inset-0"
-                style={{
-                  background:
-                    'radial-gradient(circle at 50% 40%, rgba(245,158,11,0.06) 0%, transparent 60%)',
-                }}
-              />
 
               {/* Ember particles — behind flame */}
               <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">

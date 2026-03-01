@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react'
+import FlameParticles from '@/components/effects/FlameParticles'
 import fireAnimation from './Fire.json'
 
 export type FlameState =
@@ -179,6 +180,9 @@ export default function FocusFlame({ state, intensity, streak, coins }: FocusFla
             : { duration: 0.8 }
         }
       />
+
+      {/* Flame particles — behind Lottie, above glow */}
+      <FlameParticles state={state} intensity={intensity} />
 
       {/* Flame — Lottie wrapped in Framer Motion for state-driven animation */}
       <motion.div
