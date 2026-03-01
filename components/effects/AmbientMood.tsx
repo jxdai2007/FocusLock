@@ -1,21 +1,19 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
-import { motion, useAnimationControls } from 'framer-motion'
+import { useEffect, useRef } from 'react'
 
 const GRADIENTS = {
   focused:
-    'radial-gradient(circle at 50% 35%, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 30%, transparent 60%)',
+    'radial-gradient(circle 600px at 50% 35%, rgba(34,197,94,0.08) 0%, rgba(34,197,94,0.03) 40%, transparent 70%)',
   drifting:
-    'radial-gradient(circle at 50% 35%, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 30%, transparent 60%)',
+    'radial-gradient(circle 600px at 50% 35%, rgba(245,158,11,0.08) 0%, rgba(245,158,11,0.03) 40%, transparent 70%)',
   distracted:
-    'radial-gradient(circle at 50% 35%, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.04) 30%, transparent 60%)',
+    'radial-gradient(circle 600px at 50% 35%, rgba(239,68,68,0.1) 0%, rgba(239,68,68,0.04) 40%, transparent 70%)',
   idle:
-    'radial-gradient(circle at 50% 50%, rgba(245,158,11,0.12) 0%, transparent 70%)',
-} as const
-
-const PULSE_GRADIENT =
-  'radial-gradient(circle at 50% 35%, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.08) 30%, transparent 60%)'
+    'radial-gradient(circle 600px at 50% 35%, rgba(245,158,11,0.12) 0%, transparent 70%)',
+  lifeLost:
+    'radial-gradient(circle 600px at 50% 35%, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.08) 40%, transparent 70%)',
+}
 
 function getGradient(focusScore: number, isActive: boolean): string {
   if (!isActive) return GRADIENTS.idle
@@ -31,77 +29,46 @@ interface AmbientMoodProps {
 }
 
 export default function AmbientMood({ focusScore, isActive, lifeLostTrigger }: AmbientMoodProps) {
-  const controls = useAnimationControls()
+  const divRef = useRef<HTMLDivElement>(null)
   const prevTrigger = useRef(lifeLostTrigger)
-  const [isPulsing, setIsPulsing] = useState(false)
 
-  const baseGradient = getGradient(focusScore, isActive)
+  const gradient = getGradient(focusScore, isActive)
+  const gradientRef = useRef(gradient)
+  gradientRef.current = gradient
 
-  // Active states: animate gradient transitions
-  useEffect(() => {
-    if (isPulsing || !isActive) return
-    controls.start({ background: baseGradient, opacity: 1 }, { duration: 2, ease: 'easeInOut' })
-  }, [baseGradient, controls, isPulsing, isActive])
-
-  // Pulse red on life lost
+  // Life-lost pulse: briefly flash red then return
   useEffect(() => {
     if (lifeLostTrigger === prevTrigger.current) return
     prevTrigger.current = lifeLostTrigger
 
-    setIsPulsing(true)
-    controls
-      .start({ background: PULSE_GRADIENT, opacity: 1 }, { duration: 0.3 })
-      .then(() => controls.start({ background: baseGradient, opacity: 1 }, { duration: 1, ease: 'easeOut' }))
-      .then(() => setIsPulsing(false))
-  }, [lifeLostTrigger, baseGradient, controls])
+    const el = divRef.current
+    if (!el) return
+
+    // Flash red gradient
+    el.style.background = GRADIENTS.lifeLost
+    el.style.opacity = '1'
+    el.style.animation = 'none'
+
+    const t = setTimeout(() => {
+      // Read current gradient from ref to avoid stale closure
+      el.style.background = gradientRef.current
+      el.style.opacity = ''
+      el.style.animation = ''
+    }, 300)
+
+    return () => clearTimeout(t)
+  }, [lifeLostTrigger])
 
   return (
-    <>
-      {/* Active-state gradient layer */}
-      <motion.div
-        className="pointer-events-none fixed inset-0 z-0"
-        aria-hidden
-        animate={controls}
-        initial={{ background: baseGradient, opacity: isActive ? 1 : 0 }}
-      />
-
-      {/* Idle: cascading outward ripple from flame center */}
-      {!isActive && (
-        <>
-          <motion.div
-            className="pointer-events-none fixed z-0"
-            aria-hidden
-            style={{
-              width: 300,
-              height: 300,
-              borderRadius: '50%',
-              top: '35%',
-              left: '50%',
-              x: '-50%',
-              y: '-50%',
-              background: GRADIENTS.idle,
-            }}
-            animate={{ scale: [0.3, 2.5], opacity: [0.7, 0] }}
-            transition={{ duration: 3.5, ease: 'easeOut', repeat: Infinity }}
-          />
-          <motion.div
-            className="pointer-events-none fixed z-0"
-            aria-hidden
-            style={{
-              width: 300,
-              height: 300,
-              borderRadius: '50%',
-              top: '35%',
-              left: '50%',
-              x: '-50%',
-              y: '-50%',
-              background: GRADIENTS.idle,
-            }}
-            animate={{ scale: [0.3, 2.5], opacity: [0.7, 0] }}
-            transition={{ duration: 3.5, ease: 'easeOut', repeat: Infinity, delay: 1.75 }}
-          />
-        </>
-      )}
-    </>
+    <div
+      ref={divRef}
+      className="pointer-events-none fixed inset-0 z-0"
+      aria-hidden
+      style={{
+        background: gradient,
+        transition: 'background 2s ease-in-out',
+        animation: isActive ? 'ambient-breathe 4s ease-in-out infinite' : 'none',
+      }}
+    />
   )
 }

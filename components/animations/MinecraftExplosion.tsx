@@ -196,10 +196,5 @@ export default function MinecraftExplosion({ active }: MinecraftExplosionProps) 
     }
   }, [active])
 
-  // Reset spawn flag when deactivated
-  useEffect(() => {
-    if (!active) spawnedRef.current = false
-  }, [active])
-
   return <div ref={wrapRef} className="pointer-events-none fixed inset-0 z-[62]" />
 }

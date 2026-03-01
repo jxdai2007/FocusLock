@@ -72,6 +72,12 @@
   animation: blink 1s step-end infinite;
 }
 
+@keyframes ambient-breathe {
+  0%   { opacity: 0.6; }
+  50%  { opacity: 1; }
+  100% { opacity: 0.6; }
+}
+
 @keyframes ember-rise {
   0%   { opacity: 0;    transform: translateY(0); }
   20%  { opacity: 0.22; }
