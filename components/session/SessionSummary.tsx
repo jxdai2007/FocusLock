@@ -14,6 +14,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
+import SRankReveal from '@/components/animations/SRankReveal'
 import { generateSessionReview } from '@/lib/gemini'
 import { playCoinEarned } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
@@ -37,32 +38,36 @@ function getGrade(pct: number): { letter: string; color: string; glow: string } 
 export default function SessionSummary() {
   const { sessionSummary, session, openSetup, returnToIdle, newlyUnlockedAchievements, clearNewAchievements } = useSessionStore()
 
-  const [phase, setPhase] = useState<'entrance' | 'achievements' | 'card'>('entrance')
+  const [phase, setPhase] = useState<'entrance' | 'achievements' | 's-rank' | 'card'>('entrance')
   const [aiReview, setAiReview] = useState<string | null>(null)
+  const [isShaking, setIsShaking] = useState(false)
   const coinSoundPlayedRef = useRef(false)
 
   const isGameOver = (sessionSummary?.livesRemaining ?? 1) === 0
+  const isSRank = (sessionSummary?.focusPercentage ?? 0) >= 90
 
-  // Phase transition: entrance → achievements (if any) or card
+  // Phase transition: entrance → achievements / s-rank / card
   useEffect(() => {
     const entranceDuration = isGameOver ? 3000 : 1500
     const t = setTimeout(() => {
-      setPhase(newlyUnlockedAchievements.length > 0 ? 'achievements' : 'card')
+      if (newlyUnlockedAchievements.length > 0) setPhase('achievements')
+      else if (isSRank) setPhase('s-rank')
+      else setPhase('card')
     }, entranceDuration)
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGameOver])
 
-  // Auto-advance: achievements → card
+  // Auto-advance: achievements → s-rank or card
   useEffect(() => {
     if (phase !== 'achievements') return
     const duration = newlyUnlockedAchievements.length * 600 + 1200
     const t = setTimeout(() => {
       clearNewAchievements()
-      setPhase('card')
+      setPhase(isSRank ? 's-rank' : 'card')
     }, duration)
     return () => clearTimeout(t)
-  }, [phase, newlyUnlockedAchievements.length, clearNewAchievements])
+  }, [phase, newlyUnlockedAchievements.length, clearNewAchievements, isSRank])
 
   // AI review (fire-and-forget on mount)
   useEffect(() => {
@@ -104,7 +109,11 @@ export default function SessionSummary() {
   const cardActive = phase === 'card'
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden px-4 py-12">
+    <motion.main
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden px-4 py-12"
+      animate={isShaking ? { x: [0, -2, 2, -2, 2, -1, 1, 0] } : {}}
+      transition={isShaking ? { duration: 0.4, repeat: Infinity } : {}}
+    >
 
       {/* ── Entrance sequence ── */}
       <AnimatePresence>
@@ -176,6 +185,13 @@ export default function SessionSummary() {
         )}
       </AnimatePresence>
 
+      {/* ── S-Rank meteor impact ── */}
+      <SRankReveal
+        active={phase === 's-rank'}
+        onComplete={() => setPhase('card')}
+        onShake={setIsShaking}
+      />
+
       {/* ── Summary card ── */}
       <AnimatePresence>
         {phase === 'card' && (
@@ -189,9 +205,9 @@ export default function SessionSummary() {
             <div className="text-center">
               <motion.p
                 className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
-                initial={{ scale: 0 }}
-                animate={{ scale: [0, 1.2, 1] }}
-                transition={{ type: 'spring', stiffness: 260, damping: 15 }}
+                initial={isSRank ? { scale: 1, opacity: 1 } : { scale: 0 }}
+                animate={isSRank ? { scale: 1, opacity: 1 } : { scale: [0, 1.2, 1] }}
+                transition={isSRank ? { duration: 0.3 } : { type: 'spring', stiffness: 260, damping: 15 }}
               >
                 {grade.letter}
               </motion.p>
@@ -339,6 +355,6 @@ export default function SessionSummary() {
           </motion.div>
         )}
       </AnimatePresence>
-    </main>
+    </motion.main>
   )
 }
