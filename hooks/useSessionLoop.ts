@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import type { RefObject } from 'react'
 import { analyzeFrame } from '@/lib/gemini'
+import { captureMoment } from '@/lib/photoCapture'
 import type { SessionContext, SessionState } from '@/lib/types'
 import type { WebcamHandle } from '@/components/webcam/WebcamCapture'
 import { useSessionStore } from '@/stores/sessionStore'
@@ -35,6 +36,9 @@ export function useSessionLoop(webcamRef: RefObject<WebcamHandle>) {
       const analysis = await analyzeFrame(frame, session.config, buildContext(session))
       if (!analysis) return
       processAnalysis(analysis)
+      // Capture the same frame that was sent to Gemini
+      const updated = useSessionStore.getState().session
+      if (updated) captureMoment(frame, analysis, updated)
       if (useSessionStore.getState().session?.lives === 0) endSession()
     } finally {
       setIsAnalyzing(false)

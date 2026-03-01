@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Heart } from 'lucide-react'
+import { toPng } from 'html-to-image'
 import {
   AreaChart,
   Area,
@@ -14,12 +15,16 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
+import CaughtCard from '@/components/session/CaughtCard'
 import ConfettiExplosion from '@/components/animations/ConfettiExplosion'
 import SRankReveal from '@/components/animations/SRankReveal'
 import { generateSessionReview } from '@/lib/gemini'
+import { getAllDistractions, getBestMoment } from '@/lib/photoCapture'
 import { getSortedPlayers } from '@/lib/rooms'
+import { playEvidenceSlam } from '@/lib/slamAudio'
 import { playClick, playCoinEarned, playConfetti, playMilestone, playTrombone } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
+import type { CaughtMoment } from '@/lib/types'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useMultiplayerStore } from '@/stores/multiplayerStore'
 
@@ -46,8 +51,13 @@ export default function SessionSummary() {
   const [aiReview, setAiReview] = useState<string | null>(null)
   const [isShaking, setIsShaking] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
+  const [caughtMoments, setCaughtMoments] = useState<CaughtMoment[]>([])
+  const [slamLanded, setSlamLanded] = useState(false)
+  const [caughtIndex, setCaughtIndex] = useState(0)
   const coinSoundPlayedRef = useRef(false)
   const gradeSoundPlayedRef = useRef(false)
+  const audioCtxRef = useRef<AudioContext | null>(null)
+  const shareRef = useRef<HTMLDivElement>(null)
 
   const isGameOver = (sessionSummary?.livesRemaining ?? 1) === 0
   const isSRank = (sessionSummary?.focusPercentage ?? 0) >= 90
@@ -115,6 +125,37 @@ export default function SessionSummary() {
     }, 500)
     return () => clearTimeout(t)
   }, [phase, sessionSummary?.focusPercentage])
+
+  // Fetch caught moments when card phase activates
+  useEffect(() => {
+    if (phase !== 'card') return
+    const all = getAllDistractions()
+    const best = getBestMoment()
+    setCaughtMoments(all.length > 0 ? all.slice(0, 3) : best ? [best] : [])
+  }, [phase])
+
+  // Share / copy handler
+  const handleShare = useCallback(async (mode: 'share' | 'copy') => {
+    if (!shareRef.current) return
+    try {
+      const dataUrl = await toPng(shareRef.current, { backgroundColor: '#0a0a0a', pixelRatio: 2 })
+      const res = await fetch(dataUrl)
+      const blob = await res.blob()
+
+      if (mode === 'share' && navigator.share) {
+        const file = new File([blob], 'focuslock-caught.png', { type: 'image/png' })
+        await navigator.share({ files: [file] })
+      } else if (mode === 'copy' && navigator.clipboard?.write) {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      } else {
+        // Fallback: download
+        const a = document.createElement('a')
+        a.href = dataUrl
+        a.download = 'focuslock-caught.png'
+        a.click()
+      }
+    } catch { /* user cancelled or API not available */ }
+  }, [])
 
   if (!sessionSummary || !session) return null
 
@@ -312,6 +353,141 @@ export default function SessionSummary() {
               )}
             </div>
 
+            {/* 1b. Caught in the Act — slam / float */}
+            {caughtMoments.length > 0 && (
+              <div ref={shareRef} className="flex flex-col items-center gap-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
+                  📸 Caught in the Act
+                </p>
+
+                {caughtMoments.some((m) => m.type !== 'focused') ? (
+                  <div className="flex flex-col items-center gap-3">
+                    {/* Slam card — one at a time */}
+                    <div className="relative" style={{ width: 280, height: 360 }}>
+                      <AnimatePresence mode="wait">
+                        <motion.div
+                          key={caughtMoments[caughtIndex].id}
+                          initial={
+                            caughtIndex === 0 && !slamLanded
+                              ? { y: -600, rotate: -12, scale: 1.3, opacity: 0 }
+                              : { x: 60, opacity: 0, rotate: 3 }
+                          }
+                          animate={{ y: 0, x: 0, rotate: 0, scale: 1, opacity: 1 }}
+                          exit={{ x: -60, opacity: 0, rotate: -3 }}
+                          transition={
+                            caughtIndex === 0 && !slamLanded
+                              ? { type: 'spring', stiffness: 180, damping: 22, mass: 2.5 }
+                              : { type: 'spring', stiffness: 300, damping: 26 }
+                          }
+                          onAnimationComplete={() => {
+                            if (!slamLanded) {
+                              setIsShaking(true)
+                              setTimeout(() => setIsShaking(false), 400)
+                              if (!audioCtxRef.current) audioCtxRef.current = new AudioContext()
+                              playEvidenceSlam(audioCtxRef.current)
+                              setSlamLanded(true)
+                            }
+                          }}
+                        >
+                          <CaughtCard moment={caughtMoments[caughtIndex]} />
+                        </motion.div>
+                      </AnimatePresence>
+
+                      {/* Shadow splat on landing */}
+                      <AnimatePresence>
+                        {slamLanded && (
+                          <motion.div
+                            className="absolute rounded-full bg-black/40 blur-md"
+                            style={{ bottom: -10, left: '50%', zIndex: 0 }}
+                            initial={{ width: 0, height: 0, x: '-50%', opacity: 0.8 }}
+                            animate={{ width: 200, height: 20, x: '-50%', opacity: 0.3 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.2 }}
+                          />
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Navigation arrows + dots */}
+                    {caughtMoments.length > 1 && slamLanded && (
+                      <motion.div
+                        className="flex items-center gap-3"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.3 }}
+                      >
+                        <button
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-zinc-400 text-sm hover:bg-zinc-700 transition disabled:opacity-30"
+                          disabled={caughtIndex === 0}
+                          onClick={() => setCaughtIndex((i) => i - 1)}
+                        >
+                          ‹
+                        </button>
+                        <div className="flex gap-1.5">
+                          {caughtMoments.map((_, i) => (
+                            <button
+                              key={i}
+                              className={`h-1.5 rounded-full transition-all ${
+                                i === caughtIndex ? 'w-4 bg-zinc-300' : 'w-1.5 bg-zinc-600'
+                              }`}
+                              onClick={() => setCaughtIndex(i)}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-zinc-700 bg-zinc-800 text-zinc-400 text-sm hover:bg-zinc-700 transition disabled:opacity-30"
+                          disabled={caughtIndex === caughtMoments.length - 1}
+                          onClick={() => setCaughtIndex((i) => i + 1)}
+                        >
+                          ›
+                        </button>
+                      </motion.div>
+                    )}
+                  </div>
+                ) : (
+                  /* Perfect session — single focused card, gentle float */
+                  <motion.div
+                    initial={{ y: 40, opacity: 0, scale: 0.95 }}
+                    animate={{ y: 0, opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 120, damping: 18 }}
+                    style={{ filter: 'drop-shadow(0 0 20px rgba(250,204,21,0.3))' }}
+                  >
+                    <CaughtCard moment={caughtMoments[0]} />
+                  </motion.div>
+                )}
+
+                {/* Perfect session message */}
+                {caughtMoments.length === 1 && caughtMoments[0].type === 'focused' && (
+                  <motion.p
+                    className="text-sm font-medium text-green-400 italic"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    Not a single distraction. Respect.
+                  </motion.p>
+                )}
+
+                {/* Share / Copy buttons */}
+                <div className="flex gap-2 mt-1">
+                  <motion.button
+                    className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-700 transition"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleShare('share')}
+                  >
+                    📤 Share
+                  </motion.button>
+                  <motion.button
+                    className="rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs text-zinc-400 hover:bg-zinc-700 transition"
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleShare('copy')}
+                  >
+                    📋 Copy
+                  </motion.button>
+                </div>
+              </div>
+            )}
+
             {/* 2. Big stats row — AnimatedNumber */}
             <div className="flex items-center justify-around">
               <div className="text-center">
@@ -411,6 +587,44 @@ export default function SessionSummary() {
                         </div>
                       )
                     })}
+                </div>
+              </div>
+            )}
+
+            {/* 6b. Multiplayer Caught in the Act */}
+            {isInRoom && room?.players && caughtMoments.length > 0 && (
+              <div>
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">
+                  📸 Caught in the Act
+                </p>
+                <div className="flex gap-3 overflow-x-auto thin-scroll pb-2">
+                  {/* Local player — real photo */}
+                  <CaughtCard moment={caughtMoments[0]} compact />
+                  {/* Other players — stat cards */}
+                  {getSortedPlayers(room)
+                    .filter((p) => p.id !== playerId)
+                    .map((player) => (
+                      <div
+                        key={player.id}
+                        className="flex h-[260px] w-[200px] flex-shrink-0 flex-col items-center justify-center gap-2 rounded-xl border-2 border-zinc-700/40 bg-zinc-900 p-4"
+                      >
+                        <span className="text-5xl">👤</span>
+                        <p className="text-sm font-bold text-zinc-300 truncate max-w-[160px]">{player.name}</p>
+                        <p className="text-game text-lg font-bold text-zinc-100">{player.focusScore}%</p>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: player.livesTotal }).map((_, i) => (
+                            <Heart
+                              key={i}
+                              size={14}
+                              className={i < player.lives ? 'fill-red-500 text-red-500' : 'fill-zinc-800 text-zinc-700'}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-xs text-zinc-500 italic">
+                          {player.status === 'focused' ? 'Locked in' : player.status === 'distracted' ? 'Busted' : player.status === 'away' ? 'Gone AWOL' : 'Idle'}
+                        </p>
+                      </div>
+                    ))}
                 </div>
               </div>
             )}

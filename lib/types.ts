@@ -141,6 +141,16 @@ export interface StudyRoom {
   isActive: boolean
 }
 
+export interface CaughtMoment {
+  id: string
+  imageData: string
+  timestamp: number
+  type: 'distracted' | 'focused' | 'away'
+  distractionType: string | null
+  roast: string
+  focusScore: number
+}
+
 export interface AppSettings {
   soundEnabled: boolean
   soundVolume: number

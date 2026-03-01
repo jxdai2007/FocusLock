@@ -286,7 +286,8 @@ export const useSessionStore = create<StoreState>()(
         } catch { /* multiplayer store not available */ }
       },
 
-      returnToIdle: () =>
+      returnToIdle: () => {
+        try { require('@/lib/photoCapture').clear() } catch { /* ok */ }
         set({
           session: null,
           appState: 'idle',
@@ -295,7 +296,8 @@ export const useSessionStore = create<StoreState>()(
           sessionSummary: null,
           newlyUnlockedAchievements: [],
           isGameOver: false,
-        }),
+        })
+      },
 
       clearRoast: () => set({ latestRoast: null }),
       clearMilestone: () => set({ latestMilestone: null }),
