@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { mergeAchievements } from '@/lib/achievements'
+import { playClick } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
 
 // Panel: w-[380px], p-4 (16px/side) → 348px content
@@ -23,7 +24,7 @@ export default function AchievementsPanel() {
   const unlockedCount = achievements.filter((a) => a.unlocked).length
   const [selectedId, setSelectedId] = useState<string | null>(null)
 
-  const toggle = (id: string) => setSelectedId((p) => (p === id ? null : id))
+  const toggle = (id: string) => { playClick(); setSelectedId((p) => (p === id ? null : id)) }
 
   const rows: typeof achievements[] = []
   for (let i = 0; i < achievements.length; i += 3) rows.push(achievements.slice(i, i + 3))

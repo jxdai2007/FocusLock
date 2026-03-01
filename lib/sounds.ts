@@ -21,6 +21,9 @@ let burnSound: Howl | null = null
 let pingSound: Howl | null = null
 let coinSound: Howl | null = null
 let fanfareSound: Howl | null = null
+let clickSound: Howl | null = null
+let confettiSound: Howl | null = null
+let tromboneSound: Howl | null = null
 
 function play(getOrCreate: () => Howl, volume: number) {
   if (!canPlay()) return
@@ -63,4 +66,25 @@ export function playMilestone() {
     fanfareSound ??= new Howl({ src: ['/sounds/fanfare.mp3'] })
     return fanfareSound
   }, 0.35)
+}
+
+export function playClick() {
+  play(() => {
+    clickSound ??= new Howl({ src: ['/sounds/click.mp3'] })
+    return clickSound
+  }, 0.25)
+}
+
+export function playConfetti() {
+  play(() => {
+    confettiSound ??= new Howl({ src: ['/sounds/confetti.mp3'] })
+    return confettiSound
+  }, 0.35)
+}
+
+export function playTrombone() {
+  play(() => {
+    tromboneSound ??= new Howl({ src: ['/sounds/trombone.mp3'] })
+    return tromboneSound
+  }, 0.3)
 }

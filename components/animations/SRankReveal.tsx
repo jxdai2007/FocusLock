@@ -6,6 +6,7 @@ import { playSRankRumble, playSRankImpact, playSRankEmerge } from '@/lib/sRankAu
 
 // ---------------------------------------------------------------------------
 // Types
+// ---------------------------------------------------------------------------
 
 type Phase = 'idle' | 'meteor' | 'impact' | 'emerge' | 'heal' | 'transition' | 'done'
 

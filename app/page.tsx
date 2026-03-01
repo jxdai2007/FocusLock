@@ -10,6 +10,7 @@ import MilestoneToast from '@/components/gamification/MilestoneToast'
 import AchievementsPanel from '@/components/gamification/AchievementsPanel'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
+import { playClick } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
 
 // ---------------------------------------------------------------------------
@@ -222,7 +223,7 @@ export default function Home() {
                 transition={delay(0.3)}
                 whileHover={{ scale: 1.03, filter: 'brightness(1.1)' }}
                 whileTap={{ scale: 0.97 }}
-                onClick={openSetup}
+                onClick={() => { playClick(); openSetup() }}
               >
                 🔥 Start Session
               </motion.button>

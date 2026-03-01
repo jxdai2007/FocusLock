@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { playClick } from '@/lib/sounds'
 import type { SessionConfig } from '@/lib/types'
 
 const DURATION_OPTIONS = [5, 15, 25, 45, 60, 90] // minutes
@@ -201,7 +202,7 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
             <Button
               variant="ghost"
               className="flex-1 text-zinc-500 hover:text-zinc-300"
-              onClick={onCancel}
+              onClick={() => { playClick(); onCancel() }}
             >
               Cancel
             </Button>
@@ -209,7 +210,7 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
               <Button
                 className="w-full bg-amber-500 text-black font-bold hover:bg-amber-400 disabled:opacity-40 text-game tracking-widest uppercase"
                 disabled={!taskDescription.trim()}
-                onClick={handleSubmit}
+                onClick={() => { playClick(); handleSubmit() }}
               >
                 🔒 Lock In
               </Button>

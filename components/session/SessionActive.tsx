@@ -20,6 +20,7 @@ import Shockwave from '@/components/animations/Shockwave'
 import { useFlameState } from '@/hooks/useFlameState'
 import { useSessionLoop } from '@/hooks/useSessionLoop'
 import { calculateCoins } from '@/lib/focusEngine'
+import { playClick } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -220,7 +221,7 @@ export default function SessionActive() {
             <p className="mt-2 text-sm text-zinc-600">Press resume to continue</p>
             <button
               className="mt-6 rounded-xl border border-zinc-700 bg-zinc-800 px-8 py-3 text-game text-sm text-zinc-300 transition hover:bg-zinc-700"
-              onClick={resumeSession}
+              onClick={() => { playClick(); resumeSession() }}
             >
               ▶ Resume
             </button>
@@ -410,13 +411,14 @@ export default function SessionActive() {
         <motion.div className="flex items-center gap-3 pb-1" variants={staggerChild}>
           <button
             className="rounded-xl border border-zinc-700 bg-zinc-800 px-6 py-3 text-game text-sm text-zinc-300 transition hover:bg-zinc-700"
-            onClick={isPaused ? resumeSession : pauseSession}
+            onClick={() => { playClick(); isPaused ? resumeSession() : pauseSession() }}
           >
             {isPaused ? '▶ Resume' : '⏸ Pause'}
           </button>
           <button
             className="rounded-xl border border-red-800/60 bg-red-900/40 px-6 py-3 text-game text-sm text-red-400 transition hover:bg-red-900/60"
             onClick={() => {
+              playClick()
               if (window.confirm('End this session?')) endSession()
             }}
           >

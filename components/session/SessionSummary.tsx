@@ -14,9 +14,10 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
+import ConfettiExplosion from '@/components/animations/ConfettiExplosion'
 import SRankReveal from '@/components/animations/SRankReveal'
 import { generateSessionReview } from '@/lib/gemini'
-import { playCoinEarned } from '@/lib/sounds'
+import { playClick, playCoinEarned, playConfetti, playTrombone } from '@/lib/sounds'
 import { formatDuration, formatMMSS } from '@/lib/utils'
 import { useSessionStore } from '@/stores/sessionStore'
 
@@ -41,7 +42,9 @@ export default function SessionSummary() {
   const [phase, setPhase] = useState<'entrance' | 'achievements' | 's-rank' | 'card'>('entrance')
   const [aiReview, setAiReview] = useState<string | null>(null)
   const [isShaking, setIsShaking] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   const coinSoundPlayedRef = useRef(false)
+  const gradeSoundPlayedRef = useRef(false)
 
   const isGameOver = (sessionSummary?.livesRemaining ?? 1) === 0
   const isSRank = (sessionSummary?.focusPercentage ?? 0) >= 90
@@ -86,6 +89,22 @@ export default function SessionSummary() {
       return () => clearTimeout(t)
     }
   }, [phase, sessionSummary?.coinsEarned])
+
+  // Grade-based celebration/failure effects — delayed 0.5s after card appears
+  useEffect(() => {
+    if (phase !== 'card' || gradeSoundPlayedRef.current) return
+    const pct = sessionSummary?.focusPercentage ?? 0
+    const t = setTimeout(() => {
+      gradeSoundPlayedRef.current = true
+      if (pct >= 80) {
+        setShowConfetti(true)
+        playConfetti()
+      } else if (pct < 60) {
+        playTrombone()
+      }
+    }, 500)
+    return () => clearTimeout(t)
+  }, [phase, sessionSummary?.focusPercentage])
 
   if (!sessionSummary || !session) return null
 
@@ -192,6 +211,22 @@ export default function SessionSummary() {
         onShake={setIsShaking}
       />
 
+      {/* ── Confetti (S/A rank) ── */}
+      {showConfetti && (
+        <ConfettiExplosion
+          count={isSRank ? 70 : 40}
+          includeStars={isSRank}
+        />
+      )}
+
+      {/* ── C-rank vignette ── */}
+      {phase === 'card' && grade.letter === 'C' && (
+        <div
+          className="pointer-events-none fixed inset-0 z-[40]"
+          style={{ background: 'radial-gradient(circle, transparent 40%, rgba(0,0,0,0.3) 100%)' }}
+        />
+      )}
+
       {/* ── Summary card ── */}
       <AnimatePresence>
         {phase === 'card' && (
@@ -203,14 +238,51 @@ export default function SessionSummary() {
           >
             {/* 1. Grade */}
             <div className="text-center">
-              <motion.p
-                className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
-                initial={isSRank ? { scale: 1, opacity: 1 } : { scale: 0 }}
-                animate={isSRank ? { scale: 1, opacity: 1 } : { scale: [0, 1.2, 1] }}
-                transition={isSRank ? { duration: 0.3 } : { type: 'spring', stiffness: 260, damping: 15 }}
-              >
-                {grade.letter}
-              </motion.p>
+              {grade.letter === 'S' ? (
+                /* S-rank: already revealed by meteor, continuous golden pulse */
+                <motion.p
+                  className={`text-game text-7xl font-bold ${grade.color}`}
+                  initial={{ scale: 1, opacity: 1 }}
+                  animate={{
+                    scale: 1,
+                    textShadow: [
+                      '0 0 20px rgba(250,204,21,0.4)',
+                      '0 0 50px rgba(250,204,21,0.7)',
+                      '0 0 20px rgba(250,204,21,0.4)',
+                    ],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                >
+                  {grade.letter}
+                </motion.p>
+              ) : grade.letter === 'C' ? (
+                /* C-rank: scale up then shake */
+                <motion.p
+                  className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1], x: [0, 0, 0, -3, 3, -3, 3, -2, 2, 0] }}
+                  transition={{ duration: 0.8, times: [0, 0.3, 0.4, 0.5, 0.57, 0.64, 0.71, 0.78, 0.88, 1] }}
+                >
+                  {grade.letter}
+                </motion.p>
+              ) : (
+                /* A/B rank: normal bounce */
+                <motion.p
+                  className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 15 }}
+                >
+                  {grade.letter}
+                </motion.p>
+              )}
+              {/* Grade subtitle */}
+              {grade.letter === 'A' && (
+                <p className="text-xs text-green-400 italic mt-1">Impressive!</p>
+              )}
+              {grade.letter === 'B' && (
+                <p className="text-xs text-zinc-500 italic mt-1">Not bad...</p>
+              )}
             </div>
 
             {/* 2. Big stats row — AnimatedNumber */}
@@ -340,14 +412,14 @@ export default function SessionSummary() {
               <motion.button
                 className="rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-6 py-3 text-game text-sm font-bold text-white transition hover:brightness-110"
                 whileTap={{ scale: 0.95 }}
-                onClick={openSetup}
+                onClick={() => { playClick(); openSetup() }}
               >
                 🔥 Go Again
               </motion.button>
               <motion.button
                 className="rounded-xl border border-zinc-700 bg-zinc-800 px-6 py-3 text-game text-sm text-zinc-400 transition hover:bg-zinc-700"
                 whileTap={{ scale: 0.95 }}
-                onClick={returnToIdle}
+                onClick={() => { playClick(); returnToIdle() }}
               >
                 🏠 Home
               </motion.button>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { playMilestone } from '@/lib/sounds'
 import { useSessionStore } from '@/stores/sessionStore'
 
 // ---------------------------------------------------------------------------
@@ -28,6 +29,7 @@ export default function MilestoneToast() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (!latestMilestone) return
+    playMilestone()
     timerRef.current = setTimeout(() => clearMilestone(), 3500)
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current)
