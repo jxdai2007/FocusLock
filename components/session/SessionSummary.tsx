@@ -17,7 +17,7 @@ import {
 import AnimatedNumber from '@/components/animations/AnimatedNumber'
 import CaughtCard from '@/components/session/CaughtCard'
 import ConfettiExplosion from '@/components/animations/ConfettiExplosion'
-import SRankReveal from '@/components/animations/SRankReveal'
+import GradeReveal from '@/components/session/GradeReveal'
 import { generateSessionReview } from '@/lib/gemini'
 import { getAllDistractions, getBestMoment } from '@/lib/photoCapture'
 import { getSortedPlayers } from '@/lib/rooms'
@@ -47,7 +47,7 @@ export default function SessionSummary() {
   const { sessionSummary, session, openSetup, returnToIdle, newlyUnlockedAchievements, clearNewAchievements } = useSessionStore()
   const { isInRoom, room, playerId, leaveRoom } = useMultiplayerStore()
 
-  const [phase, setPhase] = useState<'entrance' | 'achievements' | 's-rank' | 'card'>('entrance')
+  const [phase, setPhase] = useState<'entrance' | 'achievements' | 'grade-reveal' | 'card'>('entrance')
   const [aiReview, setAiReview] = useState<string | null>(null)
   const [isShaking, setIsShaking] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -67,8 +67,7 @@ export default function SessionSummary() {
     const entranceDuration = isGameOver ? 3000 : 1500
     const t = setTimeout(() => {
       if (newlyUnlockedAchievements.length > 0) setPhase('achievements')
-      else if (isSRank) setPhase('s-rank')
-      else setPhase('card')
+      else setPhase('grade-reveal')
     }, entranceDuration)
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,16 +78,16 @@ export default function SessionSummary() {
     if (phase === 'achievements') playMilestone()
   }, [phase])
 
-  // Auto-advance: achievements → s-rank or card
+  // Auto-advance: achievements → grade-reveal
   useEffect(() => {
     if (phase !== 'achievements') return
     const duration = newlyUnlockedAchievements.length * 600 + 1200
     const t = setTimeout(() => {
       clearNewAchievements()
-      setPhase(isSRank ? 's-rank' : 'card')
+      setPhase('grade-reveal')
     }, duration)
     return () => clearTimeout(t)
-  }, [phase, newlyUnlockedAchievements.length, clearNewAchievements, isSRank])
+  }, [phase, newlyUnlockedAchievements.length, clearNewAchievements])
 
   // AI review (fire-and-forget on mount)
   useEffect(() => {
@@ -255,12 +254,15 @@ export default function SessionSummary() {
         )}
       </AnimatePresence>
 
-      {/* ── S-Rank meteor impact ── */}
-      <SRankReveal
-        active={phase === 's-rank'}
-        onComplete={() => setPhase('card')}
-        onShake={setIsShaking}
-      />
+      {/* ── Grade reveal (S/A/B/C) ── */}
+      {phase === 'grade-reveal' && (
+        <GradeReveal
+          grade={grade.letter as 'S' | 'A' | 'B' | 'C'}
+          focusPercentage={summary.focusPercentage}
+          onComplete={() => setPhase('card')}
+          onShake={setIsShaking}
+        />
+      )}
 
       {/* ── Confetti (S/A rank) ── */}
       {showConfetti && (
@@ -293,7 +295,7 @@ export default function SessionSummary() {
             {/* 1. Grade */}
             <div className="text-center">
               {grade.letter === 'S' ? (
-                /* S-rank: already revealed by meteor, continuous golden pulse */
+                /* S-rank: continuous golden pulse */
                 <motion.p
                   className={`text-game text-8xl font-bold ${grade.color}`}
                   initial={{ scale: 1, opacity: 1 }}
@@ -309,46 +311,15 @@ export default function SessionSummary() {
                 >
                   {grade.letter}
                 </motion.p>
-              ) : grade.letter === 'C' ? (
-                /* C-rank: scale up then violent shake */
-                <motion.p
-                  className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: [0, 1.2, 1], x: [0, 0, 0, -6, 6, -8, 8, -5, 5, -3, 3, 0] }}
-                  transition={{ duration: 1, times: [0, 0.25, 0.35, 0.42, 0.49, 0.56, 0.63, 0.7, 0.77, 0.84, 0.92, 1] }}
-                >
-                  {grade.letter}
-                </motion.p>
               ) : (
-                /* A/B rank: normal bounce */
+                /* A/B/C: simple fade-in (reveal already played) */
                 <motion.p
                   className={`text-game text-7xl font-bold ${grade.color} ${grade.glow}`}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: [0, 1.2, 1] }}
-                  transition={{ type: 'spring', stiffness: 260, damping: 15 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.3 }}
                 >
                   {grade.letter}
-                </motion.p>
-              )}
-              {/* Grade subtitle */}
-              {grade.letter === 'A' && (
-                <motion.p
-                  className="text-sm font-medium text-green-400 italic mt-2"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.4 }}
-                >
-                  Impressive!
-                </motion.p>
-              )}
-              {grade.letter === 'B' && (
-                <motion.p
-                  className="text-sm text-zinc-400 italic mt-2"
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.4 }}
-                >
-                  Not bad...
                 </motion.p>
               )}
             </div>

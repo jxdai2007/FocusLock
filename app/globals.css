@@ -72,6 +72,18 @@
   animation: blink 1s step-end infinite;
 }
 
+@keyframes crt-flicker {
+  0%, 100% { opacity: 1; }
+  10% { opacity: 0.88; }
+  30% { opacity: 0.95; }
+  50% { opacity: 0.85; }
+  70% { opacity: 0.92; }
+  90% { opacity: 0.98; }
+}
+.animate-crt-flicker {
+  animation: crt-flicker 0.3s steps(1) infinite;
+}
+
 @keyframes ambient-breathe {
   0%   { opacity: 0.6; }
   50%  { opacity: 1; }
