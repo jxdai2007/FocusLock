@@ -14,6 +14,7 @@ import RoomLobby from '@/components/multiplayer/RoomLobby'
 import MultiplayerDashboard from '@/components/multiplayer/MultiplayerDashboard'
 import SettingsButton from '@/components/settings/SettingsButton'
 import SettingsPanel from '@/components/settings/SettingsPanel'
+import AnalyticsDashboard from '@/components/analytics/AnalyticsDashboard'
 import AmbientMood from '@/components/effects/AmbientMood'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
@@ -76,6 +77,7 @@ export default function Home() {
     userStats,
     session,
     openSetup,
+    openAnalytics,
     startSession,
     returnToIdle,
   } = useSessionStore()
@@ -114,7 +116,7 @@ export default function Home() {
   return (
     <>
       {/* ── Ambient background mood (hidden during summary) ── */}
-      {appState !== 'summary' && (
+      {appState !== 'summary' && appState !== 'analytics' && (
         <AmbientMood
           focusScore={session?.focusScore ?? 100}
           isActive={isSessionActive}
@@ -167,6 +169,18 @@ export default function Home() {
             transition={{ duration: 0.4 }}
           >
             <SessionSummary />
+          </motion.div>
+        )}
+
+        {appState === 'analytics' && (
+          <motion.div
+            key="analytics"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0.3 } }}
+            transition={{ duration: 0.3 }}
+          >
+            <AnalyticsDashboard />
           </motion.div>
         )}
 
@@ -290,12 +304,24 @@ export default function Home() {
                 </motion.button>
               </motion.div>
 
+              {/* Analytics button */}
+              <motion.button
+                className="mt-2 w-72 rounded-xl border border-zinc-700 bg-zinc-900/40 py-3 text-game text-sm font-bold uppercase tracking-wider text-zinc-300 hover:border-amber-500/50 hover:text-amber-400 transition-colors"
+                variants={fadeUp} initial="hidden" animate="visible"
+                transition={delay(0.4)}
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => { playClick(); openAnalytics() }}
+              >
+                📊 Analytics
+              </motion.button>
+
               {/* First-visit welcome card */}
               {userStats.totalSessions === 0 && (
                 <motion.div
                   className="glass-card mt-8 mb-8 w-full max-w-lg px-6 py-8 text-center"
                   variants={fadeUp} initial="hidden" animate="visible"
-                  transition={delay(0.4)}
+                  transition={delay(0.45)}
                 >
                   <p className="text-game mb-2 text-xl text-zinc-200">Welcome to FocusLock 🔒</p>
                   <p className="mb-6 text-sm text-zinc-500">
@@ -324,7 +350,7 @@ export default function Home() {
                   <motion.div
                     className="glass-card mt-8 w-full max-w-lg px-6 py-4"
                     variants={fadeUp} initial="hidden" animate="visible"
-                    transition={delay(0.4)}
+                    transition={delay(0.45)}
                   >
                     <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">📊 Your Stats</p>
                     <div className="flex items-center justify-around">
@@ -351,7 +377,7 @@ export default function Home() {
                   <motion.div
                     className="glass-card mb-8 mt-4 w-full max-w-lg px-6 py-4"
                     variants={fadeUp} initial="hidden" animate="visible"
-                    transition={delay(0.5)}
+                    transition={delay(0.55)}
                   >
                     <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">📜 Recent Sessions</p>
                     {userStats.sessions.length === 0 ? (

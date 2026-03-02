@@ -19,7 +19,7 @@ import type {
   UserStats,
 } from '@/lib/types'
 
-export type AppState = 'idle' | 'setup' | 'active' | 'paused' | 'summary'
+export type AppState = 'idle' | 'setup' | 'active' | 'paused' | 'summary' | 'analytics'
 
 const DEFAULT_USER_STATS: UserStats = {
   dayStreak: 0,
@@ -49,6 +49,7 @@ interface StoreState {
   userStats: UserStats
   // actions
   openSetup: () => void
+  openAnalytics: () => void
   startSession: (config: SessionConfig) => void
   processAnalysis: (analysis: FocusAnalysis) => void
   pauseSession: () => void
@@ -100,6 +101,7 @@ export const useSessionStore = create<StoreState>()(
       userStats: DEFAULT_USER_STATS,
 
       openSetup: () => set({ appState: 'setup' }),
+      openAnalytics: () => set({ appState: 'analytics' }),
 
       startSession: (config: SessionConfig) => {
         const { userStats } = get()
