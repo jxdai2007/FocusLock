@@ -5,6 +5,8 @@ import type { AppSettings } from '@/lib/types'
 const DEFAULT_SETTINGS: AppSettings = {
   soundEnabled: true,
   soundVolume: 0.3,
+  backgroundSoundsEnabled: true,
+  backgroundSoundsVolume: 0.15,
   roastToastsEnabled: true,
   milestoneToastsEnabled: true,
   voiceRoastsEnabled: false,
@@ -15,6 +17,8 @@ const DEFAULT_SETTINGS: AppSettings = {
 interface SettingsState extends AppSettings {
   toggleSound: () => void
   setVolume: (v: number) => void
+  toggleBackgroundSounds: () => void
+  setBackgroundVolume: (v: number) => void
   toggleRoastToasts: () => void
   toggleMilestoneToasts: () => void
   toggleVoiceRoasts: () => void
@@ -30,6 +34,8 @@ export const useSettingsStore = create<SettingsState>()(
 
       toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
       setVolume: (v: number) => set({ soundVolume: v }),
+      toggleBackgroundSounds: () => set((s) => ({ backgroundSoundsEnabled: !s.backgroundSoundsEnabled })),
+      setBackgroundVolume: (v: number) => set({ backgroundSoundsVolume: v }),
       toggleRoastToasts: () => set((s) => ({ roastToastsEnabled: !s.roastToastsEnabled })),
       toggleMilestoneToasts: () => set((s) => ({ milestoneToastsEnabled: !s.milestoneToastsEnabled })),
       toggleVoiceRoasts: () => set((s) => ({ voiceRoastsEnabled: !s.voiceRoastsEnabled })),
@@ -42,6 +48,8 @@ export const useSettingsStore = create<SettingsState>()(
       partialize: (state) => ({
         soundEnabled: state.soundEnabled,
         soundVolume: state.soundVolume,
+        backgroundSoundsEnabled: state.backgroundSoundsEnabled,
+        backgroundSoundsVolume: state.backgroundSoundsVolume,
         roastToastsEnabled: state.roastToastsEnabled,
         milestoneToastsEnabled: state.milestoneToastsEnabled,
         voiceRoastsEnabled: state.voiceRoastsEnabled,

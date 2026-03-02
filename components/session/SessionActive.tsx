@@ -19,6 +19,7 @@ import ScanLines from '@/components/animations/ScanLines'
 import Shockwave from '@/components/animations/Shockwave'
 import TypewriterText from '@/components/roast/TypewriterText'
 import { useFlameState } from '@/hooks/useFlameState'
+import { useBackgroundSound } from '@/hooks/useBackgroundSound'
 import { useSessionLoop } from '@/hooks/useSessionLoop'
 import { calculateCoins } from '@/lib/focusEngine'
 import { playClick } from '@/lib/sounds'
@@ -87,6 +88,7 @@ export default function SessionActive() {
 
   const webcamRef = useRef<WebcamHandle>(null)
   useSessionLoop(webcamRef)
+  useBackgroundSound()
   const { flameState, intensity } = useFlameState()
 
   const [now, setNow] = useState(Date.now())

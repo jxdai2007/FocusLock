@@ -154,6 +154,8 @@ export interface CaughtMoment {
 export interface AppSettings {
   soundEnabled: boolean
   soundVolume: number
+  backgroundSoundsEnabled: boolean
+  backgroundSoundsVolume: number
   roastToastsEnabled: boolean
   milestoneToastsEnabled: boolean
   voiceRoastsEnabled: boolean

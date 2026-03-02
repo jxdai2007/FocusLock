@@ -67,12 +67,16 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
   const {
     soundEnabled,
     soundVolume,
+    backgroundSoundsEnabled,
+    backgroundSoundsVolume,
     roastToastsEnabled,
     milestoneToastsEnabled,
     webcamPreviewVisible,
     captureInterval,
     toggleSound,
     setVolume,
+    toggleBackgroundSounds,
+    setBackgroundVolume,
     toggleRoastToasts,
     toggleMilestoneToasts,
     toggleWebcamPreview,
@@ -122,17 +126,37 @@ export default function SettingsPanel({ onClose }: SettingsPanelProps) {
           </SettingRow>
 
           {soundEnabled && (
-            <SettingRow label="Volume">
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={soundVolume}
-                onChange={(e) => setVolume(parseFloat(e.target.value))}
-                className="h-1.5 w-24 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-amber-500 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
-              />
-            </SettingRow>
+            <>
+              <SettingRow label="Volume">
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={soundVolume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  className="h-1.5 w-24 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-amber-500 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
+                />
+              </SettingRow>
+
+              <SettingRow label="Background Sounds">
+                <Toggle enabled={backgroundSoundsEnabled} onToggle={toggleBackgroundSounds} />
+              </SettingRow>
+
+              {backgroundSoundsEnabled && (
+                <SettingRow label="Background Volume">
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.05}
+                    value={backgroundSoundsVolume}
+                    onChange={(e) => setBackgroundVolume(parseFloat(e.target.value))}
+                    className="h-1.5 w-24 cursor-pointer appearance-none rounded-full bg-zinc-700 accent-amber-500 [&::-webkit-slider-thumb]:h-3.5 [&::-webkit-slider-thumb]:w-3.5 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-amber-500"
+                  />
+                </SettingRow>
+              )}
+            </>
           )}
 
           {/* Notifications */}
