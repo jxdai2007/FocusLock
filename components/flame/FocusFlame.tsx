@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Lottie, { type LottieRefCurrentProps } from 'lottie-react'
 import FlameParticles from '@/components/effects/FlameParticles'
+import { getTheme } from '@/lib/themes'
+import { useSessionStore } from '@/stores/sessionStore'
 import fireAnimation from './Fire.json'
 
 export type FlameState =
@@ -52,19 +54,16 @@ function getLottieSpeed(state: FlameState, intensity: number): number {
   }
 }
 
-function getGlowColor(state: FlameState, intensity: number): string {
+function getGlowColor(state: FlameState, intensity: number, themeGlow: string): string {
   switch (state) {
-    case 'idle':        return 'rgba(245,158,11,0.20)'
-    case 'setup':       return 'rgba(245,158,11,0.30)'
-    case 'focused':
-      if (intensity < 50) return 'rgba(245,158,11,0.30)'   // amber
-      if (intensity < 75) return 'rgba(239,68,68,0.35)'    // red
-      return                     'rgba(124,58,237,0.30)'   // purple
+    case 'idle':        return themeGlow
+    case 'setup':       return themeGlow
+    case 'focused':     return themeGlow
+    case 'flare':       return themeGlow
     case 'distracted':  return 'rgba(80,80,80,0.10)'
     case 'away':        return 'rgba(80,80,80,0.05)'
     case 'life-lost':   return 'rgba(220,38,38,0.40)'
     case 'session-end': return 'rgba(245,158,11,0.05)'
-    case 'flare':       return 'rgba(245,158,11,0.50)'
     case 'dying':       return 'rgba(220,38,38,0.20)'
   }
 }
@@ -127,6 +126,8 @@ function getFlameAnimation(state: FlameState, intensity: number) {
 export default function FocusFlame({ state, intensity, streak, coins }: FocusFlameProps) {
   const lottieRef = useRef<LottieRefCurrentProps>(null)
   const [showFlash, setShowFlash] = useState(false)
+  const activeThemeId = useSessionStore((s) => s.userStats.activeTheme)
+  const theme = getTheme(activeThemeId)
 
   // Update Lottie playback speed whenever state or intensity changes
   useEffect(() => {
@@ -143,7 +144,7 @@ export default function FocusFlame({ state, intensity, streak, coins }: FocusFla
   }, [state])
 
   const { animate, transition } = getFlameAnimation(state, intensity)
-  const glowColor = getGlowColor(state, intensity)
+  const glowColor = getGlowColor(state, intensity, theme.colors.glow)
 
   return (
     <div className="relative flex items-center justify-center" style={{ width: 300, height: 360 }}>
@@ -182,12 +183,12 @@ export default function FocusFlame({ state, intensity, streak, coins }: FocusFla
       />
 
       {/* Flame particles — behind Lottie, above glow */}
-      <FlameParticles state={state} intensity={intensity} />
+      <FlameParticles state={state} intensity={intensity} particleColors={theme.colors.particles} />
 
       {/* Flame — Lottie wrapped in Framer Motion for state-driven animation */}
       <motion.div
         className="relative z-10"
-        style={{ width: 200, height: 300 }}
+        style={{ width: 200, height: 300, filter: theme.lottieFilter || 'none' }}
         initial={{ scale: 0 }}
         animate={animate}
         transition={transition}

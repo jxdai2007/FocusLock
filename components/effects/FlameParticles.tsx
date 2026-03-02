@@ -61,9 +61,9 @@ function modeFromState(state: FlameState): Mode {
   return 'idle'
 }
 
-function getFocusedColors(intensity: number): string[] {
-  if (intensity < 50) return COLORS.warmAmber
-  if (intensity <= 80) return [...COLORS.warmAmber.slice(0, 1), ...COLORS.mixGreen]
+function getFocusedColors(intensity: number, themeColors?: string[]): string[] {
+  if (intensity < 50) return themeColors ?? COLORS.warmAmber
+  if (intensity <= 80) return [...(themeColors ?? COLORS.warmAmber).slice(0, 1), ...COLORS.mixGreen]
   return COLORS.coolGreen
 }
 
@@ -71,8 +71,8 @@ function getFocusedColors(intensity: number): string[] {
 // Spawn functions
 // ---------------------------------------------------------------------------
 
-function spawnIdle(): Particle {
-  const color = pick(COLORS.warmAmber)
+function spawnIdle(themeColors?: string[]): Particle {
+  const color = pick(themeColors ?? COLORS.warmAmber)
   const life = rand(1.5, 2.5)
   return {
     x: BASE_X + rand(-30, 30),
@@ -88,8 +88,8 @@ function spawnIdle(): Particle {
   }
 }
 
-function spawnFocused(intensity: number): Particle {
-  const color = pick(getFocusedColors(intensity))
+function spawnFocused(intensity: number, themeColors?: string[]): Particle {
+  const color = pick(getFocusedColors(intensity, themeColors))
   const life = rand(2, 3)
   return {
     x: BASE_X + rand(-20, 20),
@@ -166,9 +166,10 @@ function spawnDying(progress: number): Particle {
 interface FlameParticlesProps {
   state: FlameState
   intensity: number
+  particleColors?: string[]
 }
 
-export default function FlameParticles({ state, intensity }: FlameParticlesProps) {
+export default function FlameParticles({ state, intensity, particleColors }: FlameParticlesProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const particlesRef = useRef<Particle[]>([])
   const lastSpawnRef = useRef(0)
@@ -240,10 +241,10 @@ export default function FlameParticles({ state, intensity }: FlameParticlesProps
         lastSpawnRef.current = now
         switch (mode) {
           case 'idle':
-            pool.push(spawnIdle())
+            pool.push(spawnIdle(particleColors))
             break
           case 'focused':
-            pool.push(spawnFocused(intensity))
+            pool.push(spawnFocused(intensity, particleColors))
             break
           case 'distracted':
             pool.push(spawnDistracted())
@@ -300,8 +301,8 @@ export default function FlameParticles({ state, intensity }: FlameParticlesProps
     return () => {
       cancelAnimationFrame(rafRef.current)
     }
-    // Re-create loop when state/intensity changes so closures capture latest values
-  }, [state, intensity])
+    // Re-create loop when state/intensity/colors change so closures capture latest values
+  }, [state, intensity, particleColors])
 
   return (
     <canvas

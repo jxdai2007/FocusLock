@@ -103,6 +103,8 @@ export interface UserStats {
   achievements: Achievement[]
   inventory: InventoryItem[]
   activeItems: string[]
+  ownedThemes: string[]
+  activeTheme: string
 }
 
 export interface ShopItem {
@@ -131,6 +133,7 @@ export interface RoomPlayer {
   status: 'focused' | 'distracted' | 'away' | 'idle'
   lastUpdate: number
   coinsEarned: number
+  theme?: string
 }
 
 export interface StudyRoom {
@@ -149,6 +152,23 @@ export interface CaughtMoment {
   distractionType: string | null
   roast: string
   focusScore: number
+}
+
+export interface FlameTheme {
+  id: string
+  name: string
+  description: string
+  icon: string
+  cost: number
+  colors: {
+    primary: string
+    secondary: string
+    glow: string
+    particles: string[]
+  }
+  lottieFilter?: string
+  backgroundMood?: string
+  rarity: 'common' | 'rare' | 'epic' | 'legendary'
 }
 
 export interface AppSettings {

@@ -31,6 +31,8 @@ const DEFAULT_USER_STATS: UserStats = {
   achievements: [],
   inventory: [],
   activeItems: [],
+  ownedThemes: ['classic'],
+  activeTheme: 'classic',
 }
 
 interface StoreState {
@@ -61,6 +63,9 @@ interface StoreState {
   purchaseItem: (itemId: string) => boolean
   activateItem: (itemId: string) => void
   deactivateItem: (itemId: string) => void
+  // themes
+  purchaseTheme: (themeId: string) => boolean
+  setActiveTheme: (themeId: string) => void
 }
 
 function toDateString(d: Date): string {
@@ -243,6 +248,8 @@ export const useSessionStore = create<StoreState>()(
           achievements: userStats.achievements,
           inventory: newInventory,
           activeItems: [], // clear active items after session
+          ownedThemes: userStats.ownedThemes,
+          activeTheme: userStats.activeTheme,
         }
 
         // Merge with master list (handles new achievements added in future releases)
@@ -347,6 +354,28 @@ export const useSessionStore = create<StoreState>()(
             activeItems: newActive,
           },
         })
+      },
+
+      purchaseTheme: (themeId: string): boolean => {
+        const { userStats } = get()
+        if (userStats.ownedThemes.includes(themeId)) return false
+        const { getTheme } = require('@/lib/themes')
+        const theme = getTheme(themeId)
+        if (userStats.totalCoins < theme.cost) return false
+        set({
+          userStats: {
+            ...userStats,
+            totalCoins: userStats.totalCoins - theme.cost,
+            ownedThemes: [...userStats.ownedThemes, themeId],
+          },
+        })
+        return true
+      },
+
+      setActiveTheme: (themeId: string) => {
+        const { userStats } = get()
+        if (!userStats.ownedThemes.includes(themeId)) return
+        set({ userStats: { ...userStats, activeTheme: themeId } })
       },
     }),
     {

@@ -5,6 +5,7 @@ import { motion, AnimatePresence, LayoutGroup } from 'framer-motion'
 import { Heart } from 'lucide-react'
 import { useMultiplayerStore } from '@/stores/multiplayerStore'
 import { getSortedPlayers } from '@/lib/rooms'
+import { getTheme } from '@/lib/themes'
 import { playClick } from '@/lib/sounds'
 import { formatDuration } from '@/lib/utils'
 import type { RoomPlayer } from '@/lib/types'
@@ -61,6 +62,8 @@ function PlayerRow({ player, rank, isSelf, anim, cardRef }: PlayerRowProps) {
           : 'bg-zinc-600'
 
   const flameScale = Math.max(0.5, player.focusScore / 100)
+  const playerTheme = getTheme(player.theme ?? 'classic')
+  const isLegendary = playerTheme.rarity === 'legendary'
 
   const borderClass =
     anim.borderFlash === 'green'
@@ -143,8 +146,12 @@ function PlayerRow({ player, rank, isSelf, anim, cardRef }: PlayerRowProps) {
 
       {/* Flame */}
       <div
-        className="text-lg leading-none shrink-0"
-        style={{ transform: `scale(${flameScale})`, transition: 'transform 0.3s ease' }}
+        className="text-lg leading-none shrink-0 rounded-full"
+        style={{
+          transform: `scale(${flameScale})`,
+          transition: 'transform 0.3s ease',
+          filter: player.status !== 'idle' ? `drop-shadow(0 0 6px ${playerTheme.colors.glow})` : 'none',
+        }}
       >
         {anim.showFlameSwap ? '\u{1F4A8}' : '\u{1F525}'}
       </div>
@@ -152,6 +159,7 @@ function PlayerRow({ player, rank, isSelf, anim, cardRef }: PlayerRowProps) {
       {/* Name + status */}
       <div className="flex-1 min-w-0">
         <p className="text-game text-xs font-bold text-zinc-200 truncate">
+          {isLegendary && <span className="mr-0.5">👑</span>}
           {isSelf ? 'YOU' : player.name}
         </p>
         <div className="flex items-center gap-1.5 mt-0.5">

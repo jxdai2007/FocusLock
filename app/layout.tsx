@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { Orbitron } from 'next/font/google'
+import ClickParticles from '@/components/effects/ClickParticles'
 import './globals.css'
 
 const orbitron = Orbitron({
@@ -21,7 +22,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`dark ${orbitron.variable}`}>
-      <body className={GeistSans.className}>{children}</body>
+      <body className={GeistSans.className}>
+        <ClickParticles />
+        {children}
+      </body>
     </html>
   )
 }

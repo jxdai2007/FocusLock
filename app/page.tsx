@@ -9,7 +9,7 @@ import SessionSummary from '@/components/session/SessionSummary'
 import MilestoneToast from '@/components/gamification/MilestoneToast'
 import AchievementsPanel from '@/components/gamification/AchievementsPanel'
 import InventoryPanel from '@/components/gamification/InventoryPanel'
-import Shop from '@/components/gamification/Shop'
+import Shop, { type ShopTab } from '@/components/gamification/Shop'
 import RoomLobby from '@/components/multiplayer/RoomLobby'
 import MultiplayerDashboard from '@/components/multiplayer/MultiplayerDashboard'
 import SettingsButton from '@/components/settings/SettingsButton'
@@ -18,6 +18,7 @@ import AmbientMood from '@/components/effects/AmbientMood'
 import EmberParticles from '@/components/animations/EmberParticles'
 import { useFlameState } from '@/hooks/useFlameState'
 import { playClick } from '@/lib/sounds'
+import { getTheme, getRarityColor } from '@/lib/themes'
 import { useSessionStore } from '@/stores/sessionStore'
 import { useMultiplayerStore } from '@/stores/multiplayerStore'
 
@@ -81,8 +82,9 @@ export default function Home() {
 
   const { flameState, intensity, streak, coins } = useFlameState()
   const { isInRoom } = useMultiplayerStore()
+  const activeTheme = getTheme(userStats.activeTheme)
 
-  const [showShop, setShowShop] = useState(false)
+  const [showShop, setShowShop] = useState<ShopTab | null>(null)
   const [showLobby, setShowLobby] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
 
@@ -117,6 +119,7 @@ export default function Home() {
           focusScore={session?.focusScore ?? 100}
           isActive={isSessionActive}
           lifeLostTrigger={session?.livesLost ?? 0}
+          themeMoodColor={activeTheme.backgroundMood}
         />
       )}
 
@@ -180,7 +183,7 @@ export default function Home() {
 
               {/* Inventory panel — pinned right on large screens */}
               <div className="hidden lg:flex fixed right-0 top-0 h-screen items-center pr-4 pointer-events-auto z-10">
-                <InventoryPanel onOpenShop={() => setShowShop(true)} />
+                <InventoryPanel onOpenShop={() => setShowShop('items')} />
               </div>
 
             <main className="relative flex min-h-screen flex-col items-center justify-center overflow-x-hidden px-4 py-12">
@@ -241,6 +244,16 @@ export default function Home() {
                 </span>
               </motion.div>
 
+              {/* Active theme label */}
+              <motion.button
+                className={`mt-2 text-[10px] font-bold ${getRarityColor(activeTheme.rarity)} hover:opacity-80 transition-opacity`}
+                variants={fadeUp} initial="hidden" animate="visible"
+                transition={delay(0.25)}
+                onClick={() => { playClick(); setShowShop('flames') }}
+              >
+                {activeTheme.icon} {activeTheme.name}
+              </motion.button>
+
               {/* Start Session button */}
               <motion.button
                 className="mt-6 w-72 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 py-4 text-game text-xl font-bold uppercase tracking-wider text-white shadow-[0_0_40px_rgba(245,158,11,0.3)] transition-all duration-200"
@@ -263,7 +276,7 @@ export default function Home() {
                   className="flex-1 rounded-xl border border-amber-600/50 bg-amber-900/30 py-3 text-game text-sm font-bold uppercase tracking-wider text-amber-400"
                   whileHover={{ scale: 1.03, filter: 'brightness(1.1)' }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => { playClick(); setShowShop(true) }}
+                  onClick={() => { playClick(); setShowShop('items') }}
                 >
                   🛒 Shop
                 </motion.button>
@@ -406,7 +419,7 @@ export default function Home() {
                 className="lg:hidden w-full max-w-lg mb-4"
                 variants={fadeUp} initial="hidden" animate="visible" transition={delay(0.65)}
               >
-                <InventoryPanel onOpenShop={() => setShowShop(true)} />
+                <InventoryPanel onOpenShop={() => setShowShop('items')} />
               </motion.div>
 
             </main>
@@ -424,7 +437,7 @@ export default function Home() {
 
       {/* ── Shop modal ── */}
       <AnimatePresence>
-        {showShop && <Shop onClose={() => setShowShop(false)} />}
+        {showShop && <Shop onClose={() => setShowShop(null)} initialTab={showShop} />}
       </AnimatePresence>
 
       {/* ── Room lobby modal ── */}

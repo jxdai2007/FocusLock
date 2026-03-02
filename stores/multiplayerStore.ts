@@ -47,6 +47,11 @@ function removeBeforeUnload() {
 }
 
 function buildSyncPayload(session: SessionState): Partial<RoomPlayer> {
+  let theme: string | undefined
+  try {
+    const { useSessionStore } = require('@/stores/sessionStore')
+    theme = useSessionStore.getState().userStats.activeTheme
+  } catch { /* ok */ }
   return {
     focusScore: session.focusScore,
     currentStreak: session.currentStreak,
@@ -54,6 +59,7 @@ function buildSyncPayload(session: SessionState): Partial<RoomPlayer> {
     livesTotal: session.config.lives,
     status: session.lastAnalysis?.status ?? 'focused',
     coinsEarned: session.coinsEarned,
+    theme,
   }
 }
 

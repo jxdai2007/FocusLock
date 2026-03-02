@@ -15,8 +15,13 @@ const GRADIENTS = {
     'radial-gradient(circle 600px at 50% 35%, rgba(239,68,68,0.2) 0%, rgba(239,68,68,0.08) 40%, transparent 70%)',
 }
 
-function getGradient(focusScore: number, isActive: boolean): string {
-  if (!isActive) return GRADIENTS.idle
+function getGradient(focusScore: number, isActive: boolean, themeMoodColor?: string): string {
+  if (!isActive) {
+    if (themeMoodColor) {
+      return `radial-gradient(circle 600px at 50% 35%, ${themeMoodColor} 0%, transparent 70%)`
+    }
+    return GRADIENTS.idle
+  }
   if (focusScore >= 70) return GRADIENTS.focused
   if (focusScore >= 40) return GRADIENTS.drifting
   return GRADIENTS.distracted
@@ -26,13 +31,14 @@ interface AmbientMoodProps {
   focusScore: number
   isActive: boolean
   lifeLostTrigger: number
+  themeMoodColor?: string
 }
 
-export default function AmbientMood({ focusScore, isActive, lifeLostTrigger }: AmbientMoodProps) {
+export default function AmbientMood({ focusScore, isActive, lifeLostTrigger, themeMoodColor }: AmbientMoodProps) {
   const divRef = useRef<HTMLDivElement>(null)
   const prevTrigger = useRef(lifeLostTrigger)
 
-  const gradient = getGradient(focusScore, isActive)
+  const gradient = getGradient(focusScore, isActive, themeMoodColor)
   const gradientRef = useRef(gradient)
   gradientRef.current = gradient
 
