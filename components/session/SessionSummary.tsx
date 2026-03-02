@@ -44,10 +44,10 @@ function getGrade(pct: number): { letter: string; color: string; glow: string } 
 // ---------------------------------------------------------------------------
 
 export default function SessionSummary() {
-  const { sessionSummary, session, openSetup, returnToIdle, newlyUnlockedAchievements, clearNewAchievements } = useSessionStore()
+  const { sessionSummary, session, openSetup, returnToIdle, newlyUnlockedAchievements, clearNewAchievements, newlyCompletedQuests, clearCompletedQuests } = useSessionStore()
   const { isInRoom, room, playerId, leaveRoom } = useMultiplayerStore()
 
-  const [phase, setPhase] = useState<'entrance' | 'achievements' | 'grade-reveal' | 'card'>('entrance')
+  const [phase, setPhase] = useState<'entrance' | 'achievements' | 'quests' | 'grade-reveal' | 'card'>('entrance')
   const [aiReview, setAiReview] = useState<string | null>(null)
   const [isShaking, setIsShaking] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
@@ -62,11 +62,12 @@ export default function SessionSummary() {
   const isGameOver = (sessionSummary?.livesRemaining ?? 1) === 0
   const isSRank = (sessionSummary?.focusPercentage ?? 0) >= 90
 
-  // Phase transition: entrance → achievements / s-rank / card
+  // Phase transition: entrance → achievements → quests → grade-reveal → card
   useEffect(() => {
     const entranceDuration = isGameOver ? 3000 : 1500
     const t = setTimeout(() => {
       if (newlyUnlockedAchievements.length > 0) setPhase('achievements')
+      else if (newlyCompletedQuests.length > 0) setPhase('quests')
       else setPhase('grade-reveal')
     }, entranceDuration)
     return () => clearTimeout(t)
@@ -78,16 +79,29 @@ export default function SessionSummary() {
     if (phase === 'achievements') playMilestone()
   }, [phase])
 
-  // Auto-advance: achievements → grade-reveal
+  // Auto-advance: achievements → quests (or grade-reveal)
   useEffect(() => {
     if (phase !== 'achievements') return
     const duration = newlyUnlockedAchievements.length * 600 + 1200
     const t = setTimeout(() => {
       clearNewAchievements()
+      if (newlyCompletedQuests.length > 0) setPhase('quests')
+      else setPhase('grade-reveal')
+    }, duration)
+    return () => clearTimeout(t)
+  }, [phase, newlyUnlockedAchievements.length, newlyCompletedQuests.length, clearNewAchievements])
+
+  // Auto-advance: quests → grade-reveal
+  useEffect(() => {
+    if (phase !== 'quests') return
+    playCoinEarned()
+    const duration = newlyCompletedQuests.length * 600 + 1200
+    const t = setTimeout(() => {
+      clearCompletedQuests()
       setPhase('grade-reveal')
     }, duration)
     return () => clearTimeout(t)
-  }, [phase, newlyUnlockedAchievements.length, clearNewAchievements])
+  }, [phase, newlyCompletedQuests.length, clearCompletedQuests])
 
   // AI review (fire-and-forget on mount)
   useEffect(() => {
@@ -248,6 +262,35 @@ export default function SessionSummary() {
                   <p className="text-xs text-zinc-500">{a.description}</p>
                 </div>
                 <span className="text-sm font-bold text-yellow-400">+{a.coinBonus} 🪙</span>
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+
+        {phase === 'quests' && (
+          <motion.div
+            key="quests-phase"
+            className="flex flex-col items-center gap-4 w-full max-w-sm"
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80 mb-2">
+              ⚔️ Quests Completed
+            </p>
+            {newlyCompletedQuests.map((q, i) => (
+              <motion.div
+                key={q.id}
+                className="flex items-center gap-4 w-full rounded-2xl border-2 border-amber-500/40 bg-zinc-900/90 px-6 py-4 shadow-[0_0_20px_rgba(245,158,11,0.15)] backdrop-blur-md"
+                initial={{ opacity: 0, x: 60 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ type: 'spring', stiffness: 280, damping: 22, delay: i * 0.5 }}
+              >
+                <span className="text-3xl">{q.icon}</span>
+                <div className="flex-1">
+                  <p className="text-game text-sm font-bold text-zinc-100">{q.title}</p>
+                  <p className="text-xs text-zinc-500">{q.description}</p>
+                </div>
+                <span className="text-sm font-bold text-yellow-400">+{q.reward} 🪙</span>
               </motion.div>
             ))}
           </motion.div>

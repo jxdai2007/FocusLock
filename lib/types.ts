@@ -105,6 +105,20 @@ export interface UserStats {
   activeItems: string[]
   ownedThemes: string[]
   activeTheme: string
+  dailyQuests: Quest[]
+  questsLastGenerated: string
+}
+
+export interface Quest {
+  id: string
+  title: string
+  description: string
+  condition: string
+  reward: number
+  difficulty: 'easy' | 'medium' | 'hard'
+  icon: string
+  completed: boolean
+  generatedAt: string
 }
 
 export interface ShopItem {

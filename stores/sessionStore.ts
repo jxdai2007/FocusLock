@@ -13,6 +13,7 @@ import type {
   Achievement,
   FocusAnalysis,
   InventoryItem,
+  Quest,
   SessionConfig,
   SessionState,
   SessionSummaryData,
@@ -33,6 +34,8 @@ const DEFAULT_USER_STATS: UserStats = {
   activeItems: [],
   ownedThemes: ['classic'],
   activeTheme: 'classic',
+  dailyQuests: [],
+  questsLastGenerated: '',
 }
 
 interface StoreState {
@@ -45,6 +48,7 @@ interface StoreState {
   sessionSummary: SessionSummaryData | null
   newlyUnlockedAchievements: Achievement[]
   isGameOver: boolean
+  newlyCompletedQuests: Quest[]
   // persisted
   userStats: UserStats
   // actions
@@ -67,6 +71,9 @@ interface StoreState {
   // themes
   purchaseTheme: (themeId: string) => boolean
   setActiveTheme: (themeId: string) => void
+  // quests
+  generateDailyQuests: () => Promise<void>
+  clearCompletedQuests: () => void
 }
 
 function toDateString(d: Date): string {
@@ -98,6 +105,7 @@ export const useSessionStore = create<StoreState>()(
       sessionSummary: null,
       newlyUnlockedAchievements: [],
       isGameOver: false,
+      newlyCompletedQuests: [],
       userStats: DEFAULT_USER_STATS,
 
       openSetup: () => set({ appState: 'setup' }),
@@ -252,6 +260,8 @@ export const useSessionStore = create<StoreState>()(
           activeItems: [], // clear active items after session
           ownedThemes: userStats.ownedThemes,
           activeTheme: userStats.activeTheme,
+          dailyQuests: userStats.dailyQuests,
+          questsLastGenerated: userStats.questsLastGenerated,
         }
 
         // Merge with master list (handles new achievements added in future releases)
@@ -271,10 +281,25 @@ export const useSessionStore = create<StoreState>()(
           return a
         })
 
+        // Check daily quests
+        const { checkQuestCompletion } = require('@/lib/quests')
+        let questBonusCoins = 0
+        const completedQuests: Quest[] = []
+        const updatedQuests = statsForCheck.dailyQuests.map((q: Quest) => {
+          if (!q.completed && checkQuestCompletion(q, summary, session.config)) {
+            questBonusCoins += q.reward
+            const completed = { ...q, completed: true }
+            completedQuests.push(completed)
+            return completed
+          }
+          return q
+        })
+
         const finalStats: UserStats = {
           ...statsForCheck,
-          totalCoins: statsForCheck.totalCoins + bonusCoins,
+          totalCoins: statsForCheck.totalCoins + bonusCoins + questBonusCoins,
           achievements: updatedAchievements,
+          dailyQuests: updatedQuests,
         }
 
         set({
@@ -282,6 +307,7 @@ export const useSessionStore = create<StoreState>()(
           userStats: finalStats,
           appState: 'summary',
           newlyUnlockedAchievements: newlyUnlocked,
+          newlyCompletedQuests: completedQuests,
         })
 
         // Flush final state + mark idle in multiplayer room
@@ -379,6 +405,26 @@ export const useSessionStore = create<StoreState>()(
         if (!userStats.ownedThemes.includes(themeId)) return
         set({ userStats: { ...userStats, activeTheme: themeId } })
       },
+
+      // -- Quests --
+
+      generateDailyQuests: async () => {
+        const { userStats } = get()
+        const today = new Date().toISOString().slice(0, 10)
+        if (userStats.questsLastGenerated === today) return
+
+        const { generateQuests } = require('@/lib/quests')
+        const quests: Quest[] = await generateQuests(userStats)
+        set({
+          userStats: {
+            ...get().userStats,
+            dailyQuests: quests,
+            questsLastGenerated: today,
+          },
+        })
+      },
+
+      clearCompletedQuests: () => set({ newlyCompletedQuests: [] }),
     }),
     {
       name: 'focuslock-stats',

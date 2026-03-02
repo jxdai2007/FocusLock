@@ -10,6 +10,7 @@ import MilestoneToast from '@/components/gamification/MilestoneToast'
 import AchievementsPanel from '@/components/gamification/AchievementsPanel'
 import InventoryPanel from '@/components/gamification/InventoryPanel'
 import Shop, { type ShopTab } from '@/components/gamification/Shop'
+import QuestPanel from '@/components/gamification/QuestPanel'
 import RoomLobby from '@/components/multiplayer/RoomLobby'
 import MultiplayerDashboard from '@/components/multiplayer/MultiplayerDashboard'
 import SettingsButton from '@/components/settings/SettingsButton'
@@ -373,11 +374,20 @@ export default function Home() {
                     </div>
                   </motion.div>
 
+                  {/* Daily Quests */}
+                  <motion.div
+                    className="mt-4 w-full max-w-lg"
+                    variants={fadeUp} initial="hidden" animate="visible"
+                    transition={delay(0.5)}
+                  >
+                    <QuestPanel />
+                  </motion.div>
+
                   {/* Recent sessions */}
                   <motion.div
                     className="glass-card mb-8 mt-4 w-full max-w-lg px-6 py-4"
                     variants={fadeUp} initial="hidden" animate="visible"
-                    transition={delay(0.55)}
+                    transition={delay(0.6)}
                   >
                     <p className="mb-3 text-xs uppercase tracking-widest text-zinc-500">📜 Recent Sessions</p>
                     {userStats.sessions.length === 0 ? (
@@ -435,7 +445,7 @@ export default function Home() {
               {/* Mobile achievements — below sessions history */}
               <motion.div
                 className="lg:hidden w-full max-w-lg mt-4 mb-4"
-                variants={fadeUp} initial="hidden" animate="visible" transition={delay(0.6)}
+                variants={fadeUp} initial="hidden" animate="visible" transition={delay(0.65)}
               >
                 <AchievementsPanel />
               </motion.div>
@@ -443,7 +453,7 @@ export default function Home() {
               {/* Mobile inventory — below achievements */}
               <motion.div
                 className="lg:hidden w-full max-w-lg mb-4"
-                variants={fadeUp} initial="hidden" animate="visible" transition={delay(0.65)}
+                variants={fadeUp} initial="hidden" animate="visible" transition={delay(0.7)}
               >
                 <InventoryPanel onOpenShop={() => setShowShop('items')} />
               </motion.div>
