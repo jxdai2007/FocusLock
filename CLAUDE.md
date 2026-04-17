@@ -1,5 +1,11 @@
 # CLAUDE.md — FocusLock
 
+## Design System
+Always read `DESIGN.md` before making any visual or UI decisions.
+All font choices, colors, spacing, motion tokens, and aesthetic direction are defined there.
+Do not deviate without explicit user approval.
+In QA mode, flag any code that doesn't match DESIGN.md.
+
 ## What This Is
 FocusLock is an AI-powered study accountability web app for a 12-hour hackathon (HOTH 12, UCLA). It uses the webcam + Gemini Vision API to detect when a student loses focus, penalizes them with a lives system, and gamifies studying with streaks, coins, and AI roasts.
 
