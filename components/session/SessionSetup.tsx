@@ -33,6 +33,8 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
   const [lives, setLives] = useState(3)
   const [taskDescription, setTaskDescription] = useState('')
   const [allowedTools, setAllowedTools] = useState<string[]>([])
+  const [watchScreen, setWatchScreen] = useState(false)
+  const [antiAI, setAntiAI] = useState(false)
 
   function toggleTool(id: string) {
     setAllowedTools((prev) =>
@@ -49,6 +51,8 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
       taskDescription: taskDescription.trim(),
       allowedDevices: allowedTools,
       blockedSites: [],
+      watchScreen: watchScreen || antiAI,
+      antiAI,
     })
   }
 
@@ -221,6 +225,51 @@ export default function SessionSetup({ onStart, onCancel }: SessionSetupProps) {
                 )
               })}
             </div>
+          </div>
+
+          {/* Screen share toggle */}
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setWatchScreen((v) => !v)}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all ${
+                (watchScreen || antiAI)
+                  ? 'border-sky-500 bg-sky-500/15 text-sky-300'
+                  : 'border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:border-zinc-500'
+              }`}
+            >
+              <span className="text-lg">🖥️</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold">Watch my screen too</p>
+                <p className="text-[10px] text-zinc-500">
+                  {antiAI
+                    ? 'Required by Anti-AI mode. Screen is shared.'
+                    : 'Share screen alongside webcam. AI catches on-screen distractions.'}
+                </p>
+              </div>
+              <span className={`text-xs ${(watchScreen || antiAI) ? 'text-sky-400' : 'text-zinc-600'}`}>
+                {(watchScreen || antiAI) ? '✓ ON' : 'OFF'}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setAntiAI((v) => !v)}
+              className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 text-left transition-all ${
+                antiAI
+                  ? 'border-fuchsia-500 bg-fuchsia-500/15 text-fuchsia-300'
+                  : 'border-zinc-700 bg-zinc-900/60 text-zinc-400 hover:border-zinc-500'
+              }`}
+            >
+              <span className="text-lg">🤖</span>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-bold">Anti-AI mode</p>
+                <p className="text-[10px] text-zinc-500">
+                  Lose a life if caught using ChatGPT, Claude, Copilot, etc. Auto-enables screen share.
+                </p>
+              </div>
+              <span className={`text-xs ${antiAI ? 'text-fuchsia-400' : 'text-zinc-600'}`}>
+                {antiAI ? '✓ ON' : 'OFF'}
+              </span>
+            </button>
           </div>
 
           {/* Actions */}

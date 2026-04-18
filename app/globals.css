@@ -25,13 +25,35 @@
     --ring: 0 0% 83.1%;
     --radius: 0.5rem;
 
-    /* FocusLock Design Tokens */
+    /* FocusLock Design Tokens — Dark Ember: Cinematic Cut v1 */
+    /* Flame arc */
+    --ember-core: #fff7ed;
     --ember-orange: #f59e0b;
+    --ember-amber: #f59e0b;
     --flame-red: #ef4444;
     --flame-purple: #7c3aed;
     --flame-blue: #3b82f6;
+
+    /* Gameplay */
     --coin-gold: #fbbf24;
     --life-red: #dc2626;
+
+    /* Semantic */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #dc2626;
+    --info: #3b82f6;
+
+    /* Motion scale — tick / beat / swell / cinematic / burn */
+    --dur-tick: 80ms;
+    --dur-beat: 200ms;
+    --dur-swell: 400ms;
+    --dur-cinematic: 900ms;
+    --dur-burn: 1800ms;
+    --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+
+    /* Reactive ember intensity (0-1) — updated live by focus streak */
+    --ember-intensity: 0.5;
   }
 
   * {
@@ -50,12 +72,33 @@
   }
 
   .ember-glow {
-    box-shadow: 0 0 60px 20px rgba(245, 158, 11, 0.15);
+    box-shadow:
+      0 0 calc(60px + 60px * var(--ember-intensity)) calc(20px + 20px * var(--ember-intensity))
+      rgba(245, 158, 11, calc(0.08 + 0.22 * var(--ember-intensity)));
+    transition: box-shadow var(--dur-swell) var(--ease-cinematic);
   }
 
   .text-game {
-    font-family: 'Orbitron', sans-serif;
+    font-family: var(--font-orbitron), 'Orbitron', sans-serif;
+    font-variant-numeric: tabular-nums;
   }
+
+  .text-cinematic {
+    font-family: var(--font-bungee), 'Bungee', sans-serif;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
+
+/* Film grain overlay (DESIGN.md RISK #5) — fixed to viewport, always on */
+.film-grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .4 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
 @keyframes scan-line-move {

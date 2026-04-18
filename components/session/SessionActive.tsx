@@ -15,6 +15,7 @@ import {
 } from 'recharts'
 import FocusFlame from '@/components/flame/FocusFlame'
 import WebcamCapture, { type WebcamHandle } from '@/components/webcam/WebcamCapture'
+import ScreenCapture, { type ScreenHandle } from '@/components/webcam/ScreenCapture'
 import ScanLines from '@/components/animations/ScanLines'
 import Shockwave from '@/components/animations/Shockwave'
 import TypewriterText from '@/components/roast/TypewriterText'
@@ -87,7 +88,8 @@ export default function SessionActive() {
   const roastToastsEnabled = useSettingsStore((s) => s.roastToastsEnabled)
 
   const webcamRef = useRef<WebcamHandle>(null)
-  useSessionLoop(webcamRef)
+  const screenRef = useRef<ScreenHandle>(null)
+  useSessionLoop(webcamRef, session?.config.watchScreen ? screenRef : undefined)
   useBackgroundSound()
   const { flameState, intensity } = useFlameState()
 
@@ -356,6 +358,23 @@ export default function SessionActive() {
           <WebcamCapture ref={webcamRef} />
           <ScanLines />
         </motion.div>
+        {session.config.watchScreen && (
+          <div
+            aria-hidden
+            style={{
+              position: 'fixed',
+              left: -99999,
+              top: 0,
+              width: 1,
+              height: 1,
+              overflow: 'hidden',
+              pointerEvents: 'none',
+              opacity: 0,
+            }}
+          >
+            <ScreenCapture ref={screenRef} />
+          </div>
+        )}
 
         {/* ── Focus Timeline ── */}
         <motion.div className="glass-card w-full p-4" variants={staggerChild}>

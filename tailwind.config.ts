@@ -51,6 +51,20 @@ const config: Config = {
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
       },
+      fontFamily: {
+        cinematic: ['var(--font-bungee)', 'Bungee', 'sans-serif'],
+        display: ['var(--font-orbitron)', 'Orbitron', 'sans-serif'],
+      },
+      transitionDuration: {
+        tick: '80ms',
+        beat: '200ms',
+        swell: '400ms',
+        cinematic: '900ms',
+        burn: '1800ms',
+      },
+      transitionTimingFunction: {
+        cinematic: 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
       keyframes: {
         'accordion-down': {
           from: { height: '0' },

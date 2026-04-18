@@ -80,6 +80,7 @@ export default function Home() {
     openAnalytics,
     startSession,
     returnToIdle,
+    loadDemoData,
   } = useSessionStore()
 
   const { flameState, intensity, streak, coins } = useFlameState()
@@ -475,6 +476,17 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
+      {/* ── Demo mode button (idle only) ── */}
+      {appState === 'idle' && (
+        <button
+          onClick={() => { playClick(); loadDemoData() }}
+          className="fixed bottom-4 left-4 z-20 rounded-lg border border-amber-600/40 bg-zinc-900/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-amber-400/80 backdrop-blur-md transition-all hover:border-amber-500 hover:text-amber-300 hover:shadow-[0_0_12px_rgba(245,158,11,0.3)]"
+          title="Populate with demo stats, history, achievements"
+        >
+          🎬 Demo Mode
+        </button>
+      )}
 
       {/* ── Settings ── */}
       <SettingsButton onOpen={() => setShowSettings(true)} />

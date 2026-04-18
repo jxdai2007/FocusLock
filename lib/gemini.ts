@@ -6,64 +6,63 @@ const GEMINI_ENDPOINT =
 const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? ''
 
 function buildAnalyzePrompt(config: SessionConfig, context: SessionContext): string {
-  const roastRules =
+  const mood =
     context.distractionCount === 0
-      ? 'Be encouraging and gentle — this is their first slip.'
+      ? 'gentle and encouraging'
       : context.distractionCount <= 2
-        ? 'Be disappointed and mildly sarcastic.'
-        : 'Be savage, creative, and brutally funny. No mercy.'
+        ? 'mildly sarcastic and disappointed'
+        : 'savage, creative, brutally funny. no mercy'
 
-  const allowedList =
+  const allowed =
     config.allowedDevices.length > 0 ? config.allowedDevices.join(', ') : 'none specified'
 
-  return `You are analyzing a webcam image of a student studying. Your ONLY job is to detect MAJOR, OBVIOUS distractions. You are NOT a behavior monitor.
+  const screenNote = config.watchScreen
+    ? 'Image is SIDE-BY-SIDE: LEFT panel = webcam of the student, RIGHT panel = their live screen. Use BOTH to judge focus. On-screen distracting apps/content count as distraction unless in allowed list.'
+    : 'Image is a webcam view of the student.'
+
+  const antiAiRule = config.antiAI && config.watchScreen
+    ? `\nANTI-AI MODE IS ON. If the SCREEN panel shows the student using an AI chatbot / LLM to do their work — including ChatGPT, Claude, Gemini, Copilot, Cursor AI chat, Perplexity, Grok, or any chat UI where they are asking an AI to write/solve/generate content related to their task — CALL IT DISTRACTED with distraction_type="ai_usage" and a sharp roast about cheating with AI. Be strict. Even a visible AI chat window open and being typed into counts. Reading AI-generated documentation / API references is fine; having an AI do the thinking for them is not.`
+    : ''
+
+  return `You are a real-time focus monitor analyzing ONE frame per second from a student's study session. React fast. ${screenNote}
 
 Student's task: "${config.taskDescription}"
-Allowed devices/tools for this task: ${allowedList}
+Allowed tools/behaviors (NEVER flag these): ${allowed}${antiAiRule}
 
-Current session context:
+Session context:
 - Lives remaining: ${context.livesRemaining}/${context.totalLives}
 - Focus score: ${context.focusScore}%
-- Current streak: ${context.currentStreak} min focused
+- Current streak: ${context.currentStreak} min
 - Distractions this session: ${context.distractionCount}
 
-Roast intensity rule: ${roastRules}
+CALL DISTRACTED the MOMENT you see (confidence >= 0.6):
+  - Phone or tablet held / looked at (unless in allowed list)
+  - Head down on desk, eyes closed, clearly sleeping
+  - Another person being spoken to / face-to-face conversation
+  - Face turned >45 degrees from workspace for this frame
+  - Full meal / sustained eating (quick snack/drink is fine)
+  - (Screen panel) social media, games, video streaming, messaging, shopping, unrelated content (not in allowed list)
 
-Mark as AWAY if:
-- No face visible in the frame at all
-- The frame shows an empty chair or empty room
-- You can only see the very back of someone's head (fully turned around)
-- The person is so far from the camera that you cannot make out facial features
-- The frame is significantly different from a normal studying position (e.g., ceiling, floor, blank wall visible instead of a person)
+CALL AWAY when:
+  - No face visible in webcam panel
+  - Empty chair / empty room
+  - Only back of head visible
 
-Mark as DISTRACTED if:
-- A phone or tablet is being actively held up and looked at
-- The student is clearly asleep (head down on desk, eyes closed, slumped)
-- Another person is engaging them in extended face-to-face conversation
-- They are turned sideways or significantly away from their workspace (more than 45 degrees from facing the screen)
+CALL FOCUSED for everything else: looking at screen/notes, reading, writing, brief glances, adjusting posture, drinking water, stretching, yawning, brief allowed-device glance.
 
-Mark as FOCUSED for everything else including:
-- Looking slightly left/right/up/down
-- Blinking, yawning, stretching
-- Drinking water, adjusting posture
-- Any ambiguous situation
+BIAS: DO NOT default to focused. If the frame CLEARLY shows a phone in hand or user asleep, CALL IT DISTRACTED even on first detection. Be decisive, not conservative.
 
-IMPORTANT: You MUST be able to clearly see the student's face (or at least their profile from the side) to mark as focused. If you cannot see a face at all, mark as AWAY. Do not assume someone is focused if they are not visibly present in the frame.
+Roast intensity for this response: ${mood}.
 
-You should return 'focused' approximately 85-90% of the time for a normal studying student. If you are returning 'distracted' more than that, you are being too strict. When in doubt, ALWAYS return focused.
-
-Confidence must be above 0.85 to mark as distracted. If you are not highly certain, return focused.
-
-Allowed devices are NOT distractions even if visible or in use.
-distraction_type must be null when status is "focused" or "away".
-
-Respond ONLY with valid JSON matching this exact shape:
+Respond with ONE JSON object ONLY, no prose, no code fences. Exact shape:
 {
   "status": "focused" | "distracted" | "away",
-  "distraction_type": "phone" | "sleeping" | "chatting" | "zoned_out" | "eating" | "looking_away" | null,
+  "distraction_type": "phone" | "sleeping" | "chatting" | "zoned_out" | "eating" | "looking_away" | "ai_usage" | null,
   "confidence": 0.0-1.0,
-  "roast": "1-2 sentence message — encouraging if focused, roast if distracted"
-}`
+  "roast": "1-2 sentence message. Encouraging when focused, brutal-funny when distracted, concerned when away."
+}
+
+distraction_type must be null when status is not "distracted".`
 }
 
 export async function analyzeFrame(
@@ -85,7 +84,7 @@ export async function analyzeFrame(
           },
         ],
         generationConfig: {
-          temperature: 0.7,
+          temperature: 0.4,
           responseMimeType: 'application/json',
         },
       }),
@@ -99,17 +98,16 @@ export async function analyzeFrame(
 
     const data = await res.json()
     const text: string | undefined = data.candidates?.[0]?.content?.parts?.[0]?.text
-
     if (!text) {
       console.error('[gemini] analyzeFrame: empty response', data)
       return null
     }
 
     const analysis = JSON.parse(text) as FocusAnalysis
-    // Always accept "away" results regardless of confidence.
-    // Only apply the 0.85 confidence threshold to "distracted" results.
-    if (analysis.status === 'distracted' && analysis.confidence < 0.85) {
-      console.log(`[gemini] Low confidence distraction ignored: ${analysis.confidence}`)
+    console.log('[gemini] =>', analysis.status, analysis.distraction_type ?? '', `conf=${analysis.confidence}`)
+
+    // Trust at >= 0.5. Below, downgrade to focused (avoid false positives).
+    if (analysis.status === 'distracted' && analysis.confidence < 0.5) {
       return { ...analysis, status: 'focused', distraction_type: null }
     }
     return analysis

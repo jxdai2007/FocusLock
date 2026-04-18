@@ -7,6 +7,7 @@ export interface FocusAnalysis {
     | 'zoned_out'
     | 'eating'
     | 'looking_away'
+    | 'ai_usage'
     | null
   confidence: number
   roast: string
@@ -18,6 +19,8 @@ export interface SessionConfig {
   taskDescription: string
   allowedDevices: string[]
   blockedSites: string[]
+  watchScreen: boolean
+  antiAI: boolean
 }
 
 export interface SessionState {

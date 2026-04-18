@@ -1,12 +1,19 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
-import { Orbitron } from 'next/font/google'
+import { Orbitron, Bungee } from 'next/font/google'
 import ClickParticles from '@/components/effects/ClickParticles'
 import './globals.css'
 
 const orbitron = Orbitron({
   subsets: ['latin'],
   variable: '--font-orbitron',
+  display: 'swap',
+})
+
+const bungee = Bungee({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-bungee',
   display: 'swap',
 })
 
@@ -21,8 +28,9 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`dark ${orbitron.variable}`}>
+    <html lang="en" className={`dark ${orbitron.variable} ${bungee.variable}`}>
       <body className={GeistSans.className}>
+        <div className="film-grain" aria-hidden="true" />
         <ClickParticles />
         {children}
       </body>

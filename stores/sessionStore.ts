@@ -67,6 +67,8 @@ interface StoreState {
   // themes
   purchaseTheme: (themeId: string) => boolean
   setActiveTheme: (themeId: string) => void
+  // demo mode
+  loadDemoData: () => void
 }
 
 function toDateString(d: Date): string {
@@ -125,12 +127,8 @@ export const useSessionStore = create<StoreState>()(
           session = { ...session, hasRevive: true }
         }
 
-        // Bake capture interval from settings
-        try {
-          const { useSettingsStore } = require('@/stores/settingsStore')
-          const { captureInterval } = useSettingsStore.getState()
-          session = { ...session, captureInterval: captureInterval ?? 12 }
-        } catch { /* settings store not available */ }
+        // Live API runs at 1Hz — each analysis represents ~1s of session time.
+        session = { ...session, captureInterval: 1 }
 
         set({
           session,
@@ -378,6 +376,93 @@ export const useSessionStore = create<StoreState>()(
         const { userStats } = get()
         if (!userStats.ownedThemes.includes(themeId)) return
         set({ userStats: { ...userStats, activeTheme: themeId } })
+      },
+
+      loadDemoData: () => {
+        const today = toDateString(new Date())
+        const dayAgo = (d: number) => toDateString(new Date(Date.now() - d * 86_400_000))
+
+        function demoSession(
+          idSuffix: string,
+          date: string,
+          totalMinutes: number,
+          focusPct: number,
+          livesLost: number,
+          bestStreakMin: number,
+          coins: number,
+          distractions: Record<string, number>,
+          review: string,
+        ) {
+          return {
+            id: `demo-${idSuffix}`,
+            date,
+            summary: {
+              totalMinutes,
+              focusPercentage: focusPct,
+              bestStreakMinutes: bestStreakMin,
+              livesRemaining: Math.max(0, 3 - livesLost),
+              livesLost,
+              distractionsByType: distractions,
+              coinsEarned: coins,
+              aiReview: review,
+              timeline: [],
+              hadComeback: focusPct >= 80 && livesLost > 0,
+            },
+          }
+        }
+
+        const demoSessions = [
+          demoSession('1', today, 45, 94, 0, 28, 95, {}, 'S-rank session. Locked in from minute one — no phone, no drift. Textbook focus.'),
+          demoSession('2', today, 25, 88, 1, 15, 72, { phone: 1 }, 'Strong run. One phone slip in the middle but you recovered fast.'),
+          demoSession('3', dayAgo(1), 60, 91, 1, 32, 110, { looking_away: 1 }, 'A-rank. 32 min streak is your new personal best this week.'),
+          demoSession('4', dayAgo(1), 25, 76, 2, 12, 58, { phone: 2 }, 'Phone won twice. Park it in another room next session.'),
+          demoSession('5', dayAgo(2), 45, 82, 1, 22, 88, { zoned_out: 1 }, 'Solid. One zone-out around the 30 min mark — get up, water, back at it.'),
+          demoSession('6', dayAgo(3), 25, 96, 0, 25, 85, {}, 'Perfect session. Didn\'t even blink wrong.'),
+          demoSession('7', dayAgo(4), 90, 79, 2, 26, 145, { looking_away: 1, phone: 1 }, 'Long session grind. Focus faded at the end — 45 min + a break next time.'),
+          demoSession('8', dayAgo(5), 15, 68, 2, 8, 32, { chatting: 1, phone: 1 }, 'Rough start. Shake it off, the streak is still alive.'),
+        ]
+
+        const unlockedIds = new Set([
+          'first_session',
+          'streak_5',
+          'streak_15',
+          'streak_30',
+          'sessions_5',
+          'sessions_25',
+          'coins_500',
+          'perfect_session',
+          's_rank',
+          'day_streak_3',
+          'day_streak_7',
+          'comeback',
+        ])
+
+        const { userStats } = get()
+        const merged = mergeAchievements(userStats.achievements)
+        const achievements = merged.map((a) =>
+          unlockedIds.has(a.id) ? { ...a, unlocked: true, unlockedAt: dayAgo(2) } : a,
+        )
+
+        const demoStats: UserStats = {
+          dayStreak: 12,
+          lastSessionDate: today,
+          totalSessions: 47,
+          totalFocusMinutes: 1284,
+          totalCoins: 2450,
+          sessions: demoSessions,
+          achievements,
+          inventory: [
+            { itemId: 'extra_life', quantity: 3 },
+            { itemId: 'shield', quantity: 2 },
+            { itemId: 'streak_freeze', quantity: 1 },
+            { itemId: 'double_coins', quantity: 1 },
+          ],
+          activeItems: [],
+          ownedThemes: ['classic', 'blue_ice', 'purple_void', 'golden'],
+          activeTheme: 'golden',
+        }
+
+        set({ userStats: demoStats })
       },
     }),
     {
